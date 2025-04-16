@@ -77,26 +77,35 @@
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Internal Utility Functions for the Sidekick Library.</span>
 
-<span class="sd">This module contains helper functions used internally by other parts of the</span>
-<span class="sd">Sidekick library. Users of the library typically don&#39;t need to interact</span>
-<span class="sd">with these directly.</span>
+<span class="sd">This module contains helper functions that are used by other parts of the</span>
+<span class="sd">Sidekick library behind the scenes. You typically won&#39;t need to use these</span>
+<span class="sd">functions directly in your own scripts.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="c1"># A simple counter to help generate unique IDs.</span>
 <span class="n">_instance_counter</span> <span class="o">=</span> <span class="mi">0</span>
 
 <div class="viewcode-block" id="generate_unique_id">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.utils.generate_unique_id">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">generate_unique_id</span><span class="p">(</span><span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates a simple unique ID for a module instance. (Internal use)</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates a simple, sequential unique ID for a module instance.</span>
 
-<span class="sd">    Creates IDs like &quot;grid-1&quot;, &quot;console-2&quot;, etc. Used when an `instance_id`</span>
-<span class="sd">    is not provided by the user during module initialization.</span>
+<span class="sd">    This is used internally when you create a Sidekick module (like a Grid</span>
+<span class="sd">    or Console) without providing your own specific `instance_id`. It helps</span>
+<span class="sd">    the library distinguish between different modules of the same type.</span>
+
+<span class="sd">    The generated IDs look like &quot;grid-1&quot;, &quot;console-2&quot;, etc.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        This is intended for internal library use. Relying on the exact format</span>
+<span class="sd">        of these generated IDs is not recommended.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        prefix (str): The module type prefix (e.g., &quot;grid&quot;, &quot;console&quot;).</span>
+<span class="sd">        prefix (str): A string indicating the type of module, like &quot;grid&quot;</span>
+<span class="sd">            or &quot;console&quot;.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        str: A unique ID string for the instance.</span>
+<span class="sd">        str: A unique identifier string for the new instance.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">global</span> <span class="n">_instance_counter</span>
     <span class="n">_instance_counter</span> <span class="o">+=</span> <span class="mi">1</span>

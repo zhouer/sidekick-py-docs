@@ -75,37 +75,40 @@
              
   <h1>Source code for sidekick.canvas</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Sidekick Canvas Module Interface.</span>
+<span class="sd">Provides the Canvas class for creating a 2D drawing surface in Sidekick.</span>
 
-<span class="sd">This module provides the `Canvas` class, which allows your Python script</span>
-<span class="sd">to interact with a 2D drawing canvas displayed in the Sidekick panel.</span>
-<span class="sd">You can use it to draw simple shapes like lines, rectangles, and circles,</span>
-<span class="sd">and control their appearance (color, line width).</span>
+<span class="sd">Use the `sidekick.Canvas` class to create a blank area in the Sidekick panel</span>
+<span class="sd">where you can draw simple shapes like lines, rectangles, and circles using</span>
+<span class="sd">Python commands.</span>
 
-<span class="sd">Think of it like a simple digital whiteboard you can draw on from your code.</span>
+<span class="sd">Think of it as a basic digital whiteboard or a simple drawing API that lets</span>
+<span class="sd">you visually represent geometric concepts or create simple graphics controlled</span>
+<span class="sd">by your script.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">connection</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">connection</span> <span class="c1"># Required for get_next_command_id</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base_module</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModule</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span> <span class="c1"># Callable is included for consistency, though not used directly here</span>
 
 <div class="viewcode-block" id="Canvas">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Canvas</span><span class="p">(</span><span class="n">BaseModule</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a 2D Canvas module instance in the Sidekick UI for basic drawing.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a 2D drawing canvas module instance in the Sidekick UI.</span>
 
-<span class="sd">    Use this class to create a drawing area in Sidekick and draw simple shapes</span>
-<span class="sd">    like lines, rectangles, and circles programmatically from your Python script.</span>
-<span class="sd">    You can control the colors and line width for drawing.</span>
+<span class="sd">    Create an instance of this class to get a drawing area in Sidekick.</span>
+<span class="sd">    You can then call methods like `draw_line()`, `draw_rect()`, and</span>
+<span class="sd">    `draw_circle()` to draw shapes on it. Use `config()` to change the</span>
+<span class="sd">    drawing color, fill color, and line thickness.</span>
 
-<span class="sd">    Each drawing command (`draw_line`, `draw_rect`, etc.) is sent with a unique</span>
-<span class="sd">    internal ID (`commandId`) to help Sidekick process them reliably.</span>
+<span class="sd">    Each drawing command sent to the UI includes a unique sequential ID</span>
+<span class="sd">    (`commandId`) to help Sidekick process drawing operations reliably,</span>
+<span class="sd">    especially if commands are sent very quickly.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        target_id (str): The unique identifier for this canvas instance.</span>
-<span class="sd">        width (int): The width of the canvas in pixels.</span>
-<span class="sd">        height (int): The height of the canvas in pixels.</span>
+<span class="sd">        width (int): The width of the canvas in pixels, as specified during creation.</span>
+<span class="sd">        height (int): The height of the canvas in pixels, as specified during creation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="Canvas.__init__">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.__init__">[docs]</a>
@@ -117,111 +120,144 @@
         <span class="n">spawn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">bg_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the Canvas object, optionally creating a new canvas in Sidekick.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the Canvas object and optionally creates the UI element.</span>
 
-<span class="sd">        Sets up the canvas dimensions and prepares it for drawing commands.</span>
+<span class="sd">        Sets up the dimensions and background color for the canvas.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            width (int): The desired width of the canvas in pixels. Must be positive.</span>
 <span class="sd">            height (int): The desired height of the canvas in pixels. Must be positive.</span>
 <span class="sd">            instance_id (Optional[str]): A specific ID for this canvas instance.</span>
-<span class="sd">                - If `spawn=True`: Optional. Auto-generated if None.</span>
-<span class="sd">                - If `spawn=False`: **Required**. Identifies the existing canvas.</span>
-<span class="sd">            spawn (bool): If True (default), creates a new canvas UI element.</span>
-<span class="sd">                If False, attaches to an existing canvas element. `width`, `height`,</span>
-<span class="sd">                and `bg_color` are ignored if `spawn=False`.</span>
-<span class="sd">            bg_color (Optional[str]): A background color string (like &#39;white&#39;,</span>
-<span class="sd">                &#39;#f0f0f0&#39;, &#39;rgb(255, 0, 0)&#39;) for the canvas. Only used if</span>
-<span class="sd">                `spawn=True`. Defaults to a standard background on the Sidekick side</span>
-<span class="sd">                if not provided.</span>
+<span class="sd">                - If `spawn=True` (default): Optional. A unique ID will be</span>
+<span class="sd">                  auto-generated if not provided.</span>
+<span class="sd">                - If `spawn=False`: **Required**. Must match the ID of an</span>
+<span class="sd">                  existing canvas element in the Sidekick UI.</span>
+<span class="sd">            spawn (bool): If True (default), a command is sent to create a new</span>
+<span class="sd">                canvas element in the Sidekick UI. If False, the library assumes</span>
+<span class="sd">                the canvas element already exists, and this object attaches to it.</span>
+<span class="sd">                If `spawn=False`, the `width`, `height`, and `bg_color` arguments</span>
+<span class="sd">                are ignored when sending the (empty) spawn command, but `width`</span>
+<span class="sd">                and `height` are still validated and stored locally.</span>
+<span class="sd">            bg_color (Optional[str]): A CSS color string for the canvas background</span>
+<span class="sd">                (e.g., &#39;white&#39;, &#39;#f0f0f0&#39;, &#39;rgb(50, 50, 50)&#39;). Only used if</span>
+<span class="sd">                `spawn=True`. If None, Sidekick uses a default background color.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: If `width` or `height` are not positive integers, or if</span>
-<span class="sd">                        `spawn` is False and `instance_id` is None.</span>
+<span class="sd">                        `spawn` is False and `instance_id` is not provided.</span>
+<span class="sd">            SidekickConnectionError (or subclass): If the connection to Sidekick</span>
+<span class="sd">                cannot be established.</span>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            &gt;&gt;&gt; # Create a 300x200 canvas with a light gray background</span>
 <span class="sd">            &gt;&gt;&gt; canvas = sidekick.Canvas(300, 200, bg_color=&quot;#eeeeee&quot;)</span>
 <span class="sd">            &gt;&gt;&gt;</span>
-<span class="sd">            &gt;&gt;&gt; # Attach to an existing canvas named &quot;drawing-area&quot;</span>
-<span class="sd">            &gt;&gt;&gt; existing_canvas = sidekick.Canvas(width=1, height=1, # Dummy values needed</span>
+<span class="sd">            &gt;&gt;&gt; # Attach to an existing canvas UI element named &quot;drawing-area&quot;</span>
+<span class="sd">            &gt;&gt;&gt; # Note: We still need dummy width/height for validation here.</span>
+<span class="sd">            &gt;&gt;&gt; existing_canvas = sidekick.Canvas(width=1, height=1,</span>
 <span class="sd">            ...                                 instance_id=&quot;drawing-area&quot;, spawn=False)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">width</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">height</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">height</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Canvas width and height must be positive integers.&quot;</span><span class="p">)</span>
+        <span class="c1"># Validate dimensions first, even if not spawning, to store them locally.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">width</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Canvas width must be a positive integer.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">height</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">height</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Canvas height must be a positive integer.&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Payload only matters if spawning a new instance.</span>
+        <span class="c1"># Prepare the payload for the initial &#39;spawn&#39; command.</span>
+        <span class="c1"># Only include details if we are actually creating the canvas (spawn=True).</span>
         <span class="n">spawn_payload</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="n">spawn</span><span class="p">:</span>
+             <span class="c1"># Keys must be camelCase for the protocol.</span>
              <span class="n">spawn_payload</span><span class="p">[</span><span class="s2">&quot;width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">width</span>
              <span class="n">spawn_payload</span><span class="p">[</span><span class="s2">&quot;height&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">height</span>
              <span class="k">if</span> <span class="n">bg_color</span><span class="p">:</span>
-                 <span class="n">spawn_payload</span><span class="p">[</span><span class="s2">&quot;bgColor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bg_color</span> <span class="c1"># camelCase key</span>
+                 <span class="n">spawn_payload</span><span class="p">[</span><span class="s2">&quot;bgColor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bg_color</span>
 
+        <span class="c1"># Call the base class initializer. It handles connection, ID, registration,</span>
+        <span class="c1"># and sending the spawn command if spawn=True.</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">module_type</span><span class="o">=</span><span class="s2">&quot;canvas&quot;</span><span class="p">,</span>
             <span class="n">instance_id</span><span class="o">=</span><span class="n">instance_id</span><span class="p">,</span>
             <span class="n">spawn</span><span class="o">=</span><span class="n">spawn</span><span class="p">,</span>
-            <span class="n">payload</span><span class="o">=</span><span class="n">spawn_payload</span> <span class="k">if</span> <span class="n">spawn</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">payload</span><span class="o">=</span><span class="n">spawn_payload</span> <span class="k">if</span> <span class="n">spawn</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="c1"># Send payload only if spawning.</span>
         <span class="p">)</span>
-        <span class="c1"># Store dimensions locally for potential future use or reference.</span>
+
+        <span class="c1"># Store dimensions locally for reference (e.g., future validation, though</span>
+        <span class="c1"># currently not used for bounds checking in drawing commands).</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">height</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39; initialized (spawn=</span><span class="si">{</span><span class="n">spawn</span><span class="si">}</span><span class="s2">, size=</span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">height</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">)</span></div>
 
 
-    <span class="c1"># _internal_message_handler is inherited from BaseModule and handles &#39;error&#39;</span>
-    <span class="c1"># Canvas currently doesn&#39;t have specific &#39;event&#39; types to handle.</span>
+    <span class="c1"># --- Internal Message Handling ---</span>
+    <span class="c1"># Inherits _internal_message_handler from BaseModule.</span>
+    <span class="c1"># Currently, the Canvas UI doesn&#39;t send any specific &#39;event&#39; messages back</span>
+    <span class="c1"># (like clicks), so we only need the base class&#39;s error handling.</span>
 
-    <span class="c1"># on_error is inherited from BaseModule</span>
+    <span class="c1"># --- Error Callback ---</span>
+    <span class="c1"># Inherits on_error(callback) method from BaseModule. Use this to handle</span>
+    <span class="c1"># potential errors reported by the Canvas UI element.</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_send_canvas_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal helper to construct and send a canvas update command.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal helper to build and send a Canvas &#39;update&#39; command.</span>
 
-<span class="sd">        Automatically includes the next unique command ID required by the protocol.</span>
+<span class="sd">        This automatically adds the required unique `commandId` to the payload</span>
+<span class="sd">        before sending the update.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            action (str): The drawing or configuration action (e.g., &quot;line&quot;, &quot;rect&quot;).</span>
-<span class="sd">            options (Optional[Dict[str, Any]]): Action-specific parameters.</span>
-<span class="sd">                Keys should be camelCase. Defaults to an empty dictionary.</span>
+<span class="sd">            action (str): The specific canvas action (e.g., &quot;line&quot;, &quot;rect&quot;, &quot;clear&quot;, &quot;config&quot;).</span>
+<span class="sd">            options (Optional[Dict[str, Any]]): A dictionary containing the parameters</span>
+<span class="sd">                for the action (e.g., coordinates, colors). Keys should be `camelCase`.</span>
+<span class="sd">                Defaults to an empty dictionary if None.</span>
 
-<span class="sd">        Returns:</span>
-<span class="sd">            None</span>
+<span class="sd">        Raises:</span>
+<span class="sd">            SidekickConnectionError (or subclass): If the connection is not ready</span>
+<span class="sd">                or sending fails.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Ensure options is at least an empty dict if None is passed.</span>
+        <span class="c1"># Ensure options payload is at least an empty dict.</span>
         <span class="n">options_payload</span> <span class="o">=</span> <span class="n">options</span> <span class="ow">or</span> <span class="p">{}</span>
 
-        <span class="c1"># Construct the full payload including the action, options, and commandId.</span>
+        <span class="c1"># Construct the full payload required by the protocol for canvas updates.</span>
         <span class="n">update_payload</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
             <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="n">options_payload</span><span class="p">,</span>
-            <span class="s2">&quot;commandId&quot;</span><span class="p">:</span> <span class="n">connection</span><span class="o">.</span><span class="n">get_next_command_id</span><span class="p">()</span> <span class="c1"># Get unique ID for this command</span>
+            <span class="c1"># Get the next sequential ID for this specific drawing command.</span>
+            <span class="s2">&quot;commandId&quot;</span><span class="p">:</span> <span class="n">connection</span><span class="o">.</span><span class="n">get_next_command_id</span><span class="p">()</span>
         <span class="p">}</span>
+        <span class="c1"># Use the base class&#39;s method to send the &#39;update&#39; command.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_send_update</span><span class="p">(</span><span class="n">update_payload</span><span class="p">)</span>
+
+    <span class="c1"># --- Public Canvas Methods ---</span>
 
 <div class="viewcode-block" id="Canvas.clear">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.clear">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clears the entire canvas, optionally filling it with a specific color.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clears the entire canvas, optionally filling it with a background color.</span>
+
+<span class="sd">        Removes all previously drawn shapes.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            color (Optional[str]): A color string (like &#39;white&#39;, &#39;#ff0000&#39;) to fill</span>
-<span class="sd">                the canvas after clearing. If None, it usually reverts to the</span>
-<span class="sd">                initial background or becomes transparent, depending on Sidekick.</span>
-
-<span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; # Clear the canvas (revert to default background)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.clear()</span>
-<span class="sd">            &gt;&gt;&gt; # Clear the canvas and make it blue</span>
-<span class="sd">            &gt;&gt;&gt; canvas.clear(color=&quot;blue&quot;)</span>
+<span class="sd">            color (Optional[str]): A CSS color string (e.g., &#39;white&#39;, &#39;#ff0000&#39;)</span>
+<span class="sd">                to fill the canvas with after clearing. If None (default), the</span>
+<span class="sd">                canvas will usually revert to its initial background color or</span>
+<span class="sd">                become transparent, depending on the Sidekick UI implementation.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
+
+<span class="sd">        Examples:</span>
+<span class="sd">            &gt;&gt;&gt; # Clear the canvas (reverts to default background)</span>
+<span class="sd">            &gt;&gt;&gt; canvas.clear()</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # Clear the canvas and make the background blue</span>
+<span class="sd">            &gt;&gt;&gt; canvas.clear(color=&quot;blue&quot;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># Only include the color option if one was provided.</span>
         <span class="k">if</span> <span class="n">color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">options</span><span class="p">[</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">color</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_command</span><span class="p">(</span><span class="s2">&quot;clear&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_command</span><span class="p">(</span><span class="s2">&quot;clear&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Sent clear command (color=</span><span class="si">{</span><span class="n">color</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Canvas.config">
@@ -232,62 +268,86 @@
         <span class="n">fill_style</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">line_width</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configures the drawing styles for subsequent drawing commands.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configures the drawing styles for *subsequent* shape drawing commands.</span>
 
-<span class="sd">        Set the color used for outlines (`stroke_style`), the color for filling</span>
-<span class="sd">        shapes (`fill_style`), and the thickness of lines (`line_width`). Any</span>
-<span class="sd">        parameter left as `None` will not be changed in Sidekick.</span>
+<span class="sd">        Use this to set the color for outlines (`stroke_style`), the color used</span>
+<span class="sd">        for filling shapes (`fill_style`), and the thickness of lines (`line_width`).</span>
+<span class="sd">        Any style parameter you set here will remain active for all future drawing</span>
+<span class="sd">        calls until you change it again using `config()`.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            stroke_style (Optional[str]): Color for lines and outlines (e.g., &#39;black&#39;, &#39;#00FF00&#39;).</span>
-<span class="sd">            fill_style (Optional[str]): Color for filling shapes (e.g., &#39;blue&#39;, &#39;#FFFF00&#39;).</span>
-<span class="sd">            line_width (Optional[int]): Width of lines in pixels.</span>
-
-<span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; # Set drawing color to red, fill color to yellow, line width to 3 pixels</span>
-<span class="sd">            &gt;&gt;&gt; canvas.config(stroke_style=&quot;red&quot;, fill_style=&quot;yellow&quot;, line_width=3)</span>
-<span class="sd">            &gt;&gt;&gt; # Only change the line width to 1</span>
-<span class="sd">            &gt;&gt;&gt; canvas.config(line_width=1)</span>
+<span class="sd">            stroke_style (Optional[str]): The color for drawing lines and shape</span>
+<span class="sd">                outlines (e.g., &#39;black&#39;, &#39;#00FF00&#39;, &#39;rgba(0,0,255,0.8)&#39;). If None,</span>
+<span class="sd">                the current stroke style is not changed.</span>
+<span class="sd">            fill_style (Optional[str]): The color for filling shapes (rectangles,</span>
+<span class="sd">                circles) when the `filled` parameter is True in drawing commands</span>
+<span class="sd">                (e.g., &#39;blue&#39;, &#39;#FFFF00&#39;). If None, the current fill style is</span>
+<span class="sd">                not changed.</span>
+<span class="sd">            line_width (Optional[int]): The width (thickness) of lines and shape</span>
+<span class="sd">                outlines in pixels. Must be a positive integer. If None, the</span>
+<span class="sd">                current line width is not changed.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
+
+<span class="sd">        Examples:</span>
+<span class="sd">            &gt;&gt;&gt; # Set drawing color to red, fill to yellow, line width to 3 pixels</span>
+<span class="sd">            &gt;&gt;&gt; canvas.config(stroke_style=&quot;red&quot;, fill_style=&quot;yellow&quot;, line_width=3)</span>
+<span class="sd">            &gt;&gt;&gt; # Now draw a filled red rectangle (uses the new styles)</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_rect(10, 10, 50, 50, filled=True) # Outline red, fill yellow</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # Only change the line width back to 1 (stroke and fill remain)</span>
+<span class="sd">            &gt;&gt;&gt; canvas.config(line_width=1)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="c1"># Only include options if they are explicitly provided (not None).</span>
+        <span class="c1"># Build the options dictionary, only including parameters that were provided.</span>
+        <span class="c1"># Keys must be camelCase.</span>
         <span class="k">if</span> <span class="n">stroke_style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;strokeStyle&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stroke_style</span>
         <span class="k">if</span> <span class="n">fill_style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;fillStyle&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fill_style</span>
-        <span class="k">if</span> <span class="n">line_width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineWidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_width</span>
+        <span class="k">if</span> <span class="n">line_width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line_width</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">line_width</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineWidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_width</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Invalid line_width (</span><span class="si">{</span><span class="n">line_width</span><span class="si">}</span><span class="s2">) in config. Must be positive integer. Ignoring.&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Send the command only if there are actual configuration changes.</span>
+        <span class="c1"># Only send the command if there&#39;s actually something to configure.</span>
         <span class="k">if</span> <span class="n">options</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_command</span><span class="p">(</span><span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Sent config command: </span><span class="si">{</span><span class="n">options</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: config() called with no arguments to change.&quot;</span><span class="p">)</span></div>
+             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: config() called with no styles to change.&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Canvas.draw_line">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.draw_line">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">draw_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">x2</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y2</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a line segment on the canvas.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a straight line segment on the canvas.</span>
 
-<span class="sd">        Uses the current `stroke_style` and `line_width` set by `config()`.</span>
+<span class="sd">        The line is drawn using the current `stroke_style` and `line_width`</span>
+<span class="sd">        set by the last call to `config()`. The coordinate system origin (0,0)</span>
+<span class="sd">        is typically the top-left corner of the canvas.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            x1 (int): Starting x-coordinate of the line.</span>
-<span class="sd">            y1 (int): Starting y-coordinate of the line.</span>
-<span class="sd">            x2 (int): Ending x-coordinate of the line.</span>
-<span class="sd">            y2 (int): Ending y-coordinate of the line.</span>
-
-<span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; # Draw a diagonal line from top-left (10,10) to (50,50)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.draw_line(10, 10, 50, 50)</span>
+<span class="sd">            x1 (int): The x-coordinate (horizontal position) of the line&#39;s start point.</span>
+<span class="sd">            y1 (int): The y-coordinate (vertical position) of the line&#39;s start point.</span>
+<span class="sd">            x2 (int): The x-coordinate of the line&#39;s end point.</span>
+<span class="sd">            y2 (int): The y-coordinate of the line&#39;s end point.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
+
+<span class="sd">        Examples:</span>
+<span class="sd">            &gt;&gt;&gt; # Draw a diagonal line from (10, 10) to (50, 100)</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_line(10, 10, 50, 100)</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # Draw a horizontal line</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_line(20, 50, 80, 50)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Coordinates must be camelCase in the options payload.</span>
         <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;x1&quot;</span><span class="p">:</span> <span class="n">x1</span><span class="p">,</span> <span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="n">y1</span><span class="p">,</span> <span class="s2">&quot;x2&quot;</span><span class="p">:</span> <span class="n">x2</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="n">y2</span><span class="p">}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_command</span><span class="p">(</span><span class="s2">&quot;line&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
 
+        <span class="c1"># Consider adding logging here if needed for debugging draws.</span>
 
 <div class="viewcode-block" id="Canvas.draw_rect">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.draw_rect">[docs]</a>
@@ -295,31 +355,36 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a rectangle on the canvas.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            x (int): X-coordinate of the top-left corner.</span>
-<span class="sd">            y (int): Y-coordinate of the top-left corner.</span>
-<span class="sd">            width (int): Width of the rectangle. Should be non-negative.</span>
-<span class="sd">            height (int): Height of the rectangle. Should be non-negative.</span>
-<span class="sd">            filled (bool): If True, fills the rectangle using the current `fill_style`.</span>
-<span class="sd">                If False (default), draws only the outline using the current</span>
-<span class="sd">                `stroke_style` and `line_width`.</span>
-
-<span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; # Draw the outline of a 50x30 rectangle at (20, 20)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.draw_rect(20, 20, 50, 30)</span>
-<span class="sd">            &gt;&gt;&gt;</span>
-<span class="sd">            &gt;&gt;&gt; # Draw a filled red rectangle (assuming fill_style is red)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.config(fill_style=&quot;red&quot;)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.draw_rect(100, 50, 40, 40, filled=True)</span>
+<span class="sd">            x (int): The x-coordinate of the top-left corner of the rectangle.</span>
+<span class="sd">            y (int): The y-coordinate of the top-left corner of the rectangle.</span>
+<span class="sd">            width (int): The width of the rectangle in pixels. Should be non-negative.</span>
+<span class="sd">            height (int): The height of the rectangle in pixels. Should be non-negative.</span>
+<span class="sd">            filled (bool): Determines how the rectangle is drawn:</span>
+<span class="sd">                - If `False` (default): Draws only the outline of the rectangle using</span>
+<span class="sd">                  the current `stroke_style` and `line_width`.</span>
+<span class="sd">                - If `True`: Fills the rectangle with the current `fill_style`</span>
+<span class="sd">                  *and* also draws the outline using the `stroke_style` and `line_width`.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
+
+<span class="sd">        Examples:</span>
+<span class="sd">            &gt;&gt;&gt; # Draw the outline of a 50x30 rectangle starting at (20, 20)</span>
+<span class="sd">            &gt;&gt;&gt; canvas.config(stroke_style=&#39;blue&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_rect(20, 20, 50, 30)</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # Draw a filled red rectangle (outline still uses stroke_style)</span>
+<span class="sd">            &gt;&gt;&gt; canvas.config(fill_style=&quot;red&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_rect(100, 50, 40, 40, filled=True)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Log a warning if dimensions are negative, but still send the command</span>
+        <span class="c1"># as the UI might handle it (e.g., by drawing nothing or using absolute value).</span>
         <span class="k">if</span> <span class="n">width</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">height</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-             <span class="c1"># Log a warning but allow the command to be sent; Sidekick might handle it.</span>
              <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                  <span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: draw_rect called with negative width/height &quot;</span>
-                 <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">height</span><span class="si">}</span><span class="s2">). Behavior depends on Sidekick implementation.&quot;</span>
+                 <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">height</span><span class="si">}</span><span class="s2">). Behavior depends on Sidekick UI implementation.&quot;</span>
              <span class="p">)</span>
+        <span class="c1"># Keys must be camelCase.</span>
         <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span> <span class="s2">&quot;width&quot;</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span> <span class="s2">&quot;height&quot;</span><span class="p">:</span> <span class="n">height</span><span class="p">,</span> <span class="s2">&quot;filled&quot;</span><span class="p">:</span> <span class="n">filled</span><span class="p">}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_command</span><span class="p">(</span><span class="s2">&quot;rect&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
 
@@ -330,38 +395,45 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a circle on the canvas.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            cx (int): X-coordinate of the center of the circle.</span>
-<span class="sd">            cy (int): Y-coordinate of the center of the circle.</span>
-<span class="sd">            radius (int): Radius of the circle. Must be positive.</span>
-<span class="sd">            filled (bool): If True, fills the circle using the current `fill_style`.</span>
-<span class="sd">                If False (default), draws only the outline using the current</span>
-<span class="sd">                `stroke_style` and `line_width`.</span>
+<span class="sd">            cx (int): The x-coordinate of the center of the circle.</span>
+<span class="sd">            cy (int): The y-coordinate of the center of the circle.</span>
+<span class="sd">            radius (int): The radius of the circle in pixels. Must be positive.</span>
+<span class="sd">            filled (bool): Determines how the circle is drawn:</span>
+<span class="sd">                - If `False` (default): Draws only the outline (circumference)</span>
+<span class="sd">                  using the current `stroke_style` and `line_width`.</span>
+<span class="sd">                - If `True`: Fills the circle with the current `fill_style`</span>
+<span class="sd">                  *and* also draws the outline using the `stroke_style` and `line_width`.</span>
 
 <span class="sd">        Raises:</span>
-<span class="sd">            ValueError: If `radius` is not positive (logs an error and ignores command).</span>
-
-<span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; # Draw the outline of a circle with radius 25 centered at (150, 100)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.draw_circle(150, 100, 25)</span>
-<span class="sd">            &gt;&gt;&gt;</span>
-<span class="sd">            &gt;&gt;&gt; # Draw a filled green circle</span>
-<span class="sd">            &gt;&gt;&gt; canvas.config(fill_style=&quot;green&quot;)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.draw_circle(50, 50, 20, filled=True)</span>
+<span class="sd">            ValueError: If `radius` is zero or negative.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
+
+<span class="sd">        Examples:</span>
+<span class="sd">            &gt;&gt;&gt; # Draw the outline of a circle with radius 25 centered at (150, 100)</span>
+<span class="sd">            &gt;&gt;&gt; canvas.config(stroke_style=&#39;green&#39;, line_width=2)</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_circle(150, 100, 25)</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # Draw a filled orange circle</span>
+<span class="sd">            &gt;&gt;&gt; canvas.config(fill_style=&quot;orange&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_circle(50, 50, 20, filled=True)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Radius must be positive for a circle to be drawn.</span>
         <span class="k">if</span> <span class="n">radius</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-             <span class="c1"># Log error and return without sending command for invalid radius</span>
-             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: draw_circle radius must be positive. Ignoring command.&quot;</span><span class="p">)</span>
-             <span class="c1"># Raise ValueError to notify the user more directly</span>
-             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Canvas draw_circle radius must be positive.&quot;</span><span class="p">)</span>
+             <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: draw_circle radius must be positive, got </span><span class="si">{</span><span class="n">radius</span><span class="si">}</span><span class="s2">.&quot;</span>
+             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s2">&quot; Ignoring command.&quot;</span><span class="p">)</span>
+             <span class="c1"># Raise ValueError to make the error explicit to the user.</span>
+             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="c1"># Keys must be camelCase.</span>
         <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cx&quot;</span><span class="p">:</span> <span class="n">cx</span><span class="p">,</span> <span class="s2">&quot;cy&quot;</span><span class="p">:</span> <span class="n">cy</span><span class="p">,</span> <span class="s2">&quot;radius&quot;</span><span class="p">:</span> <span class="n">radius</span><span class="p">,</span> <span class="s2">&quot;filled&quot;</span><span class="p">:</span> <span class="n">filled</span><span class="p">}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_command</span><span class="p">(</span><span class="s2">&quot;circle&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
 </div>
 
 
-    <span class="c1"># The remove() method is inherited from BaseModule.</span>
+    <span class="c1"># --- Removal ---</span>
+    <span class="c1"># Inherits the remove() method from BaseModule to remove the canvas element.</span>
+    <span class="c1"># No specific callbacks need resetting in _reset_specific_callbacks for Canvas.</span>
 </pre></div>
 
            </div>

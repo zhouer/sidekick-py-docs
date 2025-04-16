@@ -75,19 +75,22 @@
              
   <h1>Source code for sidekick.viz</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Sidekick Variable Visualizer (Viz) Module Interface.</span>
+<span class="sd">Provides the Viz class for visualizing Python variables in Sidekick.</span>
 
-<span class="sd">This module provides the `Viz` class, which allows you to display and inspect</span>
-<span class="sd">Python variables, including complex data structures like lists, dictionaries,</span>
-<span class="sd">sets, and objects, in an interactive tree-like view within the Sidekick panel.</span>
+<span class="sd">Use the `sidekick.Viz` class to display your Python variables, including</span>
+<span class="sd">complex data structures like lists, dictionaries, sets, and custom objects,</span>
+<span class="sd">in an interactive tree-like view within the Sidekick panel.</span>
 
 <span class="sd">Its most powerful feature is its integration with `sidekick.ObservableValue`.</span>
-<span class="sd">When you show an `ObservableValue`, the Viz panel automatically updates itself</span>
-<span class="sd">whenever the value inside the `ObservableValue` changes, providing a reactive</span>
-<span class="sd">view of your data.</span>
+<span class="sd">When you display an `ObservableValue` using `viz.show()`, the Viz panel will</span>
+<span class="sd">automatically update itself whenever the data inside the `ObservableValue` changes.</span>
+<span class="sd">This makes it incredibly easy to watch how your data structures evolve as your</span>
+<span class="sd">script runs, without needing to manually refresh the display.</span>
 
-<span class="sd">This module also contains the internal logic (`_get_representation`) used to</span>
-<span class="sd">convert Python data into a format suitable for display in Sidekick.</span>
+<span class="sd">This module also contains the complex internal logic (`_get_representation`)</span>
+<span class="sd">needed to convert Python data into a format suitable for display in the</span>
+<span class="sd">Sidekick UI, handling things like nested structures, circular references,</span>
+<span class="sd">and large collections.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
@@ -96,96 +99,250 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base_module</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModule</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.observable_value</span><span class="w"> </span><span class="kn">import</span> <span class="n">ObservableValue</span><span class="p">,</span> <span class="n">UnsubscribeFunction</span><span class="p">,</span> <span class="n">SubscriptionCallback</span>
 
-<span class="c1"># --- Representation Helper (_get_representation) ---</span>
-<span class="c1"># This complex internal function converts Python data structures into a</span>
-<span class="c1"># JSON-serializable format suitable for display in the Sidekick Viz panel.</span>
-<span class="c1"># It handles various types, nesting, circular references, and limits depth/items.</span>
-<span class="n">_MAX_DEPTH</span> <span class="o">=</span> <span class="mi">5</span>
-<span class="n">_MAX_ITEMS</span> <span class="o">=</span> <span class="mi">50</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">_get_representation</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">visited_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal helper to create a structured representation of Python data.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">visited_ids</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">visited_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-    <span class="n">current_id</span> <span class="o">=</span> <span class="nb">id</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">depth</span> <span class="o">&gt;</span> <span class="n">_MAX_DEPTH</span><span class="p">:</span> <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;truncated&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;&lt;Max Depth </span><span class="si">{</span><span class="n">_MAX_DEPTH</span><span class="si">}</span><span class="s1"> Reached&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;trunc_</span><span class="si">{</span><span class="n">current_id</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">}</span>
-    <span class="k">if</span> <span class="n">current_id</span> <span class="ow">in</span> <span class="n">visited_ids</span><span class="p">:</span> <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;recursive_ref&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;&lt;Recursive Reference: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;rec_</span><span class="si">{</span><span class="n">current_id</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">}</span>
+<span class="c1"># --- Internal Constants for Representation Generation ---</span>
+<span class="c1"># These control how deep and how many items the _get_representation function</span>
+<span class="c1"># will explore within nested data structures to avoid infinite loops or</span>
+<span class="c1"># sending excessively large amounts of data to the UI.</span>
+<span class="n">_MAX_DEPTH</span> <span class="o">=</span> <span class="mi">5</span>  <span class="c1"># How many levels deep into nested objects/lists/dicts to go.</span>
+<span class="n">_MAX_ITEMS</span> <span class="o">=</span> <span class="mi">50</span> <span class="c1"># Max number of items (list elements, dict key-value pairs, set items, object attributes) to show per level.</span>
 
+<span class="c1"># --- Representation Helper Function (Internal Use) ---</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_representation</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">visited_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts Python data into a structured, JSON-serializable dictionary for the Viz UI.</span>
+
+<span class="sd">    This is a complex internal helper function used by `Viz.show()` and</span>
+<span class="sd">    `_handle_observable_update()`. It recursively traverses Python data</span>
+<span class="sd">    structures (lists, dicts, sets, objects) and creates a representation</span>
+<span class="sd">    that the Sidekick frontend can understand and display as an interactive tree.</span>
+
+<span class="sd">    It handles:</span>
+<span class="sd">    - Basic types (int, str, bool, None).</span>
+<span class="sd">    - Lists, tuples, sets, dictionaries.</span>
+<span class="sd">    - Custom object attribute inspection (skipping methods and private attributes).</span>
+<span class="sd">    - Recursion/circular references (detects and marks them).</span>
+<span class="sd">    - Maximum depth (`_MAX_DEPTH`) to prevent infinite recursion in deep structures.</span>
+<span class="sd">    - Maximum items per collection (`_MAX_ITEMS`) to keep payloads manageable.</span>
+<span class="sd">    - Special handling for `ObservableValue` instances (inspects the wrapped value</span>
+<span class="sd">      and marks the node as observable).</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        This function is for internal library use. Its output format is specific</span>
+<span class="sd">        to the Sidekick communication protocol and UI component.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (Any): The Python data to represent.</span>
+<span class="sd">        depth (int): The current recursion depth (starts at 0).</span>
+<span class="sd">        visited_ids (Optional[Set[int]]): A set containing the `id()` of objects</span>
+<span class="sd">            already visited in the current traversal path, used to detect recursion.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict[str, Any]: A dictionary representing the data, suitable for sending</span>
+<span class="sd">            as part of the Viz module payload. Keys in the returned dictionary</span>
+<span class="sd">            and nested dictionaries should follow the `camelCase` convention</span>
+<span class="sd">            expected by the protocol/UI where appropriate (e.g., &#39;observableTracked&#39;).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Initialize visited set for the top-level call.</span>
+    <span class="k">if</span> <span class="n">visited_ids</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">visited_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="c1"># Get the memory ID of the current data item.</span>
+    <span class="n">current_id</span> <span class="o">=</span> <span class="nb">id</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="c1"># --- Termination Conditions for Recursion/Depth ---</span>
+    <span class="k">if</span> <span class="n">depth</span> <span class="o">&gt;</span> <span class="n">_MAX_DEPTH</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;truncated&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;&lt;Max Depth </span><span class="si">{</span><span class="n">_MAX_DEPTH</span><span class="si">}</span><span class="s1"> Reached&gt;&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;trunc_</span><span class="si">{</span><span class="n">current_id</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s1">&#39;</span> <span class="c1"># Unique ID for truncated node</span>
+        <span class="p">}</span>
+    <span class="k">if</span> <span class="n">current_id</span> <span class="ow">in</span> <span class="n">visited_ids</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;recursive_ref&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;&lt;Recursive Reference: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">&gt;&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;rec_</span><span class="si">{</span><span class="n">current_id</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s1">&#39;</span> <span class="c1"># Unique ID for recursive node</span>
+        <span class="p">}</span>
+
+    <span class="c1"># --- Prepare the Representation Dictionary ---</span>
     <span class="n">rep</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">data_type_name</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
-    <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">current_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2">&quot;</span> <span class="c1"># Default ID</span>
+    <span class="c1"># Default ID, might be overridden (e.g., for ObservableValue).</span>
+    <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">current_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_type_name</span>
-    <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;observableTracked&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># Default to False, override for ObservableValue</span>
+    <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;observableTracked&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># Assume not observable by default.</span>
 
     <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Mark this object ID as visited for the current path.</span>
         <span class="n">visited_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">current_id</span><span class="p">)</span>
+
+        <span class="c1"># --- Handle Different Python Types ---</span>
+
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">ObservableValue</span><span class="p">):</span>
+            <span class="c1"># If it&#39;s an ObservableValue, get its *internal* value and represent that.</span>
             <span class="n">internal_value</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
-            <span class="c1"># Generate representation for the internal value</span>
-            <span class="n">nested_rep</span> <span class="o">=</span> <span class="n">_get_representation</span><span class="p">(</span><span class="n">internal_value</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">visited_ids</span><span class="p">)</span> <span class="c1"># Pass same depth</span>
-            <span class="c1"># Mark this node as originating from an ObservableValue</span>
-            <span class="n">nested_rep</span><span class="p">[</span><span class="s1">&#39;observableTracked&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="c1"># Use the observable&#39;s own ID if available for stability</span>
-            <span class="n">nested_rep</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;_obs_value_id&#39;</span><span class="p">,</span> <span class="n">nested_rep</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;obs_</span><span class="si">{</span><span class="n">current_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
-            <span class="k">return</span> <span class="n">nested_rep</span>
-        <span class="k">elif</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;None&#39;</span><span class="p">;</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;NoneType&#39;</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)):</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="c1"># Recursively call _get_representation on the internal value.</span>
+            <span class="c1"># Use the *same* depth, as the wrapper itself doesn&#39;t add a level.</span>
+            <span class="n">nested_rep</span> <span class="o">=</span> <span class="n">_get_representation</span><span class="p">(</span><span class="n">internal_value</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">visited_ids</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+            <span class="c1"># Mark the resulting node to indicate it came from an ObservableValue.</span>
+            <span class="n">nested_rep</span><span class="p">[</span><span class="s1">&#39;observableTracked&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span> <span class="c1"># camelCase for protocol</span>
+            <span class="c1"># Try to use the ObservableValue&#39;s persistent internal ID for stability.</span>
+            <span class="n">obs_id</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;_obs_value_id&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">nested_rep</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obs_id</span> <span class="k">if</span> <span class="n">obs_id</span> <span class="k">else</span> <span class="n">nested_rep</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;obs_</span><span class="si">{</span><span class="n">current_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">nested_rep</span> <span class="c1"># Return the representation of the *inner* value</span>
+
+        <span class="k">elif</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;None&#39;</span>
+            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;NoneType&#39;</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)):</span>
+            <span class="c1"># Primitive types: just store the value directly.</span>
+            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
-            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;list&#39;</span><span class="p">;</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[];</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">);</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;list&#39;</span> <span class="c1"># Treat tuples as lists for display</span>
+            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># Store representations of items here</span>
+            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="n">_MAX_ITEMS</span><span class="p">:</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;truncated&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;... (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s1"> items, Max </span><span class="si">{</span><span class="n">_MAX_ITEMS</span><span class="si">}</span><span class="s1"> Reached)&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">_trunc_</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">});</span> <span class="k">break</span>
-                <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_get_representation</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">visited_ids</span><span class="o">.</span><span class="n">copy</span><span class="p">()));</span> <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="n">_MAX_ITEMS</span><span class="p">:</span>
+                    <span class="c1"># Stop if we exceed the max items limit.</span>
+                    <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;truncated&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;... (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s1"> items total, showing </span><span class="si">{</span><span class="n">_MAX_ITEMS</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">_trunc_</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s1">&#39;</span>
+                    <span class="p">})</span>
+                    <span class="k">break</span>
+                <span class="c1"># Recursively represent each item, incrementing depth. Pass copy of visited.</span>
+                <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_get_representation</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">visited_ids</span><span class="o">.</span><span class="n">copy</span><span class="p">()))</span>
+                <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;dict&#39;</span><span class="p">;</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[];</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">);</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="c1"># Attempt to sort keys for consistent display, fallback if keys are unorderable</span>
-            <span class="k">try</span><span class="p">:</span> <span class="n">sorted_items</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">:</span> <span class="nb">repr</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">sorted_items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
-            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">sorted_items</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="n">_MAX_ITEMS</span><span class="p">:</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;truncated&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="s1">&#39;...&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">_keytrunc_</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">},</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;truncated&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;... (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s1"> items, Max </span><span class="si">{</span><span class="n">_MAX_ITEMS</span><span class="si">}</span><span class="s1"> Reached)&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">_valtrunc_</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">}});</span> <span class="k">break</span>
+            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;dict&#39;</span>
+            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># Store {key: rep, value: rep} pairs</span>
+            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="c1"># Try to sort dict items by key&#39;s repr for consistent display order.</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Make sure keys are representable before sorting</span>
+                <span class="n">items_to_sort</span> <span class="o">=</span> <span class="p">[(</span><span class="nb">repr</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+                <span class="n">sorted_items</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">items_to_sort</span><span class="p">)</span>
+                <span class="n">processed_items</span> <span class="o">=</span> <span class="p">[(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">sorted_items</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="c1"># Fallback if keys aren&#39;t comparable or repr fails</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not sort dict keys for </span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2"> (id: </span><span class="si">{</span><span class="n">current_id</span><span class="si">}</span><span class="s2">). Using original order.&quot;</span><span class="p">)</span>
+                <span class="n">processed_items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">processed_items</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="n">_MAX_ITEMS</span><span class="p">:</span>
+                     <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                        <span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;truncated&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="s1">&#39;...&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">_keytrunc_</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">},</span>
+                        <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;truncated&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;... (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s1"> items total, showing </span><span class="si">{</span><span class="n">_MAX_ITEMS</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">_valtrunc_</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">}</span>
+                    <span class="p">})</span>
+                     <span class="k">break</span>
+                <span class="c1"># Represent both the key and the value recursively. Pass copy of visited.</span>
                 <span class="n">key_rep</span> <span class="o">=</span> <span class="n">_get_representation</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">visited_ids</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
                 <span class="n">value_rep</span> <span class="o">=</span> <span class="n">_get_representation</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">visited_ids</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
-                <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="n">key_rep</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="n">value_rep</span><span class="p">});</span> <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="n">key_rep</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="n">value_rep</span><span class="p">})</span>
+                <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">set</span><span class="p">):</span>
-            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;set&#39;</span><span class="p">;</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[];</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">);</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="k">try</span><span class="p">:</span> <span class="n">sorted_items</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="nb">repr</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">sorted_items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">sorted_items</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="n">_MAX_ITEMS</span><span class="p">:</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;truncated&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;... (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s1"> items, Max </span><span class="si">{</span><span class="n">_MAX_ITEMS</span><span class="si">}</span><span class="s1"> Reached)&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">_trunc_</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">});</span> <span class="k">break</span>
-                <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_get_representation</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">visited_ids</span><span class="o">.</span><span class="n">copy</span><span class="p">()));</span> <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="k">else</span><span class="p">:</span> <span class="c1"># Generic object inspection</span>
-            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;object (</span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">;</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{};</span> <span class="n">attribute_count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;set&#39;</span>
+            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="c1"># Try to sort set items by repr for consistency.</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">attrs</span> <span class="o">=</span> <span class="p">{};</span> <span class="n">skipped_attrs</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="c1"># Iterate through attributes, skipping private/magic/callables</span>
-                <span class="k">for</span> <span class="n">attr_name</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
-                     <span class="k">if</span> <span class="n">attr_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">):</span> <span class="k">continue</span>
-                     <span class="k">try</span><span class="p">:</span>
-                        <span class="n">attr_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span>
-                        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">attr_value</span><span class="p">):</span> <span class="k">continue</span> <span class="c1"># Skip methods</span>
-                        <span class="n">attrs</span><span class="p">[</span><span class="n">attr_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">attr_value</span>
-                     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span> <span class="n">skipped_attrs</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">attrs</span><span class="p">)</span> <span class="c1"># Length represents number of displayed attributes</span>
-                <span class="c1"># Attempt to sort attributes for consistency</span>
-                <span class="k">try</span><span class="p">:</span> <span class="n">sorted_attr_items</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">attrs</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
-                <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">sorted_attr_items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">attrs</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+                <span class="c1"># Convert items to repr first for sorting</span>
+                <span class="n">items_to_sort</span> <span class="o">=</span> <span class="p">[(</span><span class="nb">repr</span><span class="p">(</span><span class="n">item</span><span class="p">),</span> <span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]</span>
+                <span class="n">sorted_items</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">items_to_sort</span><span class="p">)</span>
+                <span class="n">processed_items</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">sorted_items</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not sort set items for </span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2"> (id: </span><span class="si">{</span><span class="n">current_id</span><span class="si">}</span><span class="s2">). Using original order.&quot;</span><span class="p">)</span>
+                <span class="n">processed_items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">processed_items</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="n">_MAX_ITEMS</span><span class="p">:</span>
+                    <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;truncated&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;... (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s1"> items total, showing </span><span class="si">{</span><span class="n">_MAX_ITEMS</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">_trunc_</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s1">&#39;</span>
+                    <span class="p">})</span>
+                    <span class="k">break</span>
+                <span class="c1"># Represent each item recursively. Pass copy of visited.</span>
+                <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_get_representation</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">visited_ids</span><span class="o">.</span><span class="n">copy</span><span class="p">()))</span>
+                <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># --- Generic Object Inspection ---</span>
+            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;object (</span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="c1"># Use a dictionary to store attribute_name: attribute_representation pairs.</span>
+            <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">attribute_count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">skipped_attrs</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">attrs_to_represent</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="c1"># Try to get attributes using dir()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">attr_name</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+                     <span class="c1"># Skip private/magic attributes and callable methods.</span>
+                     <span class="k">if</span> <span class="n">attr_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
+                        <span class="k">continue</span>
+                     <span class="k">try</span><span class="p">:</span>
+                         <span class="c1"># Store the actual attribute value for later processing.</span>
+                         <span class="n">attrs_to_represent</span><span class="p">[</span><span class="n">attr_name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span>
+                     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                         <span class="c1"># Count attributes we couldn&#39;t access.</span>
+                         <span class="n">skipped_attrs</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="c1"># Length is the number of attributes we plan to represent.</span>
+                <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">attrs_to_represent</span><span class="p">)</span>
+                <span class="c1"># Try sorting attributes alphabetically for consistent display.</span>
+                <span class="k">try</span><span class="p">:</span> <span class="n">sorted_attr_items</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">attrs_to_represent</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+                <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">sorted_attr_items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">attrs_to_represent</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="c1"># Fallback</span>
+
+                <span class="c1"># Represent each accessible, non-callable attribute.</span>
                 <span class="k">for</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">attr_value</span> <span class="ow">in</span> <span class="n">sorted_attr_items</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">attribute_count</span> <span class="o">&gt;=</span> <span class="n">_MAX_ITEMS</span><span class="p">:</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">][</span><span class="s1">&#39;...&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;truncated&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;... (Max </span><span class="si">{</span><span class="n">_MAX_ITEMS</span><span class="si">}</span><span class="s1"> Attrs Reached)&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">_attrtrunc_</span><span class="si">{</span><span class="n">attribute_count</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">};</span> <span class="k">break</span>
+                    <span class="k">if</span> <span class="n">attribute_count</span> <span class="o">&gt;=</span> <span class="n">_MAX_ITEMS</span><span class="p">:</span>
+                        <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">][</span><span class="s1">&#39;...&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="c1"># Use &#39;...&#39; as a key for the truncated message</span>
+                            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;truncated&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;... (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">attrs_to_represent</span><span class="p">)</span><span class="si">}</span><span class="s1"> attrs total, showing </span><span class="si">{</span><span class="n">_MAX_ITEMS</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rep</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">_attrtrunc_</span><span class="si">{</span><span class="n">attribute_count</span><span class="si">}</span><span class="s1">&#39;</span>
+                        <span class="p">}</span>
+                        <span class="k">break</span>
+                    <span class="c1"># Represent attribute value recursively. Pass copy of visited.</span>
                     <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">][</span><span class="n">attr_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_representation</span><span class="p">(</span><span class="n">attr_value</span><span class="p">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">visited_ids</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
                     <span class="n">attribute_count</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="c1"># If no attributes were representable, fall back to repr()</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">attribute_count</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">skipped_attrs</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">:</span>
-                     <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">data</span><span class="p">);</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;repr (</span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+                <span class="c1"># If we couldn&#39;t find/represent any attributes, fall back to repr().</span>
+                <span class="k">if</span> <span class="n">attribute_count</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">skipped_attrs</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]:</span>
+                     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Object </span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2"> (id: </span><span class="si">{</span><span class="n">current_id</span><span class="si">}</span><span class="s2">) has no representable attributes. Falling back to repr().&quot;</span><span class="p">)</span>
+                     <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                     <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;repr (</span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2">)&quot;</span> <span class="c1"># Indicate it&#39;s just the repr string.</span>
+
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e_obj</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not fully represent object attributes for </span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e_obj</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="k">try</span><span class="p">:</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">data</span><span class="p">);</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;repr (</span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2">)&quot;</span>
-                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e_repr_final</span><span class="p">:</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&lt;Object of type </span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2">, repr failed: </span><span class="si">{</span><span class="n">e_repr_final</span><span class="si">}</span><span class="s2">&gt;&quot;</span><span class="p">;</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;error&#39;</span>
+                <span class="c1"># Catch errors during the dir()/getattr() process.</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not fully inspect object attributes for </span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2"> (id: </span><span class="si">{</span><span class="n">current_id</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">e_obj</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="c1"># Fall back to repr() as a last resort.</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;repr (</span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2">)&quot;</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e_repr_final</span><span class="p">:</span>
+                    <span class="c1"># If even repr() fails.</span>
+                    <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&lt;Object of type </span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2">, repr() failed: </span><span class="si">{</span><span class="n">e_repr_final</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
+                    <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;error&#39;</span>
+
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error generating representation for type </span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;error&#39;</span><span class="p">;</span> <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&lt;Error representing object: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
+        <span class="c1"># Catch any unexpected error during representation generation.</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error generating representation for type </span><span class="si">{</span><span class="n">data_type_name</span><span class="si">}</span><span class="s2"> (id: </span><span class="si">{</span><span class="n">current_id</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;error&#39;</span>
+        <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&lt;Error representing object: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
+        <span class="c1"># Ensure ID exists even in error cases.</span>
         <span class="n">rep</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rep</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;error_</span><span class="si">{</span><span class="n">current_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">finally</span><span class="p">:</span>
-        <span class="c1"># Ensure the current ID is removed from visited set for this path</span>
+        <span class="c1"># **Crucial:** Remove the current object&#39;s ID from the visited set</span>
+        <span class="c1"># *after* exploring this path. This allows the same object to be</span>
+        <span class="c1"># visited again via different paths in the data structure.</span>
         <span class="k">if</span> <span class="n">current_id</span> <span class="ow">in</span> <span class="n">visited_ids</span><span class="p">:</span>
             <span class="n">visited_ids</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">current_id</span><span class="p">)</span>
+
     <span class="k">return</span> <span class="n">rep</span>
 
 
@@ -197,9 +354,13 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents the Variable Visualizer (Viz) module instance in Sidekick.</span>
 
 <span class="sd">    Use this class to display Python variables and data structures in an</span>
-<span class="sd">    interactive, tree-like view within the Sidekick panel. It&#39;s especially powerful</span>
-<span class="sd">    when used with :class:`sidekick.ObservableValue`, as it can automatically</span>
-<span class="sd">    update the display when the underlying data changes.</span>
+<span class="sd">    interactive, collapsible tree view within the Sidekick UI panel. It helps</span>
+<span class="sd">    you inspect the state of your data as your script runs.</span>
+
+<span class="sd">    The most powerful feature is its integration with `sidekick.ObservableValue`.</span>
+<span class="sd">    If you `.show()` an `ObservableValue`, the Viz panel will **automatically</span>
+<span class="sd">    update** whenever the wrapped data changes (e.g., list append, dict setitem).</span>
+<span class="sd">    This provides a *live*, *reactive* view of your data&#39;s state.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        target_id (str): The unique identifier for this Viz panel instance.</span>
@@ -211,190 +372,265 @@
         <span class="n">instance_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">spawn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the Viz object, optionally creating a new viz panel.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the Viz object and optionally creates the UI panel.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            instance_id (Optional[str]): A specific ID for this viz panel.</span>
-<span class="sd">                - If `spawn=True`: Optional. Auto-generated if None.</span>
-<span class="sd">                - If `spawn=False`: **Required**. Identifies the existing panel.</span>
-<span class="sd">            spawn (bool): If True (default), creates a new, empty viz panel UI</span>
-<span class="sd">                element. If False, attaches to an existing panel.</span>
+<span class="sd">            instance_id (Optional[str]): A specific ID for this Viz panel.</span>
+<span class="sd">                - If `spawn=True` (default): Optional. Auto-generated if None.</span>
+<span class="sd">                - If `spawn=False`: **Required**. Must match the ID of an existing panel.</span>
+<span class="sd">            spawn (bool): If True (default), creates a new, empty Viz panel UI</span>
+<span class="sd">                element in Sidekick. If False, attaches to an existing panel.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If `spawn` is False and `instance_id` is not provided.</span>
+<span class="sd">            SidekickConnectionError (or subclass): If the connection to Sidekick</span>
+<span class="sd">                cannot be established.</span>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            &gt;&gt;&gt; # Create a new Viz panel</span>
-<span class="sd">            &gt;&gt;&gt; viz = sidekick.Viz()</span>
+<span class="sd">            &gt;&gt;&gt; viz_panel = sidekick.Viz()</span>
 <span class="sd">            &gt;&gt;&gt;</span>
 <span class="sd">            &gt;&gt;&gt; # Attach to an existing panel named &quot;debugger-vars&quot;</span>
 <span class="sd">            &gt;&gt;&gt; existing_viz = sidekick.Viz(instance_id=&quot;debugger-vars&quot;, spawn=False)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Viz spawn payload is currently empty.</span>
+        <span class="c1"># Viz spawn command currently doesn&#39;t require a payload.</span>
         <span class="n">spawn_payload</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">spawn</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="c1"># Initialize the base class.</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">module_type</span><span class="o">=</span><span class="s2">&quot;viz&quot;</span><span class="p">,</span>
             <span class="n">instance_id</span><span class="o">=</span><span class="n">instance_id</span><span class="p">,</span>
             <span class="n">spawn</span><span class="o">=</span><span class="n">spawn</span><span class="p">,</span>
             <span class="n">payload</span><span class="o">=</span><span class="n">spawn_payload</span>
         <span class="p">)</span>
-        <span class="c1"># Stores information about shown variables and their potential unsubscribe functions.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># Tracks shown vars and subscriptions</span>
+        <span class="c1"># Internal dictionary to keep track of variables currently being displayed</span>
+        <span class="c1"># and their associated cleanup functions (for ObservableValue).</span>
+        <span class="c1"># Format: { variable_name: {&quot;value_or_observable&quot;: actual_value, &quot;unsubscribe&quot;: function_or_None} }</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz panel &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39; initialized (spawn=</span><span class="si">{</span><span class="n">spawn</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">)</span></div>
 
 
-    <span class="c1"># _internal_message_handler handles &#39;error&#39; via BaseModule. No specific events currently.</span>
-    <span class="c1"># on_error is inherited from BaseModule.</span>
+    <span class="c1"># --- Internal Message Handling ---</span>
+    <span class="c1"># Inherits _internal_message_handler from BaseModule.</span>
+    <span class="c1"># Currently, the Viz UI doesn&#39;t send any specific &#39;event&#39; messages back,</span>
+    <span class="c1"># so we only need the base class&#39;s error handling.</span>
+
+    <span class="c1"># --- Error Callback ---</span>
+    <span class="c1"># Inherits on_error(callback) method from BaseModule. Use this to handle</span>
+    <span class="c1"># potential errors reported by the Viz UI element itself.</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_handle_observable_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">change_details</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal callback triggered by changes in an observed ObservableValue.&quot;&quot;&quot;</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Received update for &#39;</span><span class="si">{</span><span class="n">variable_name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">change_details</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">action_type</span> <span class="o">=</span> <span class="n">change_details</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
-            <span class="n">path</span> <span class="o">=</span> <span class="n">change_details</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;path&quot;</span><span class="p">,</span> <span class="p">[])</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal callback method triggered by changes in a subscribed ObservableValue.</span>
 
-            <span class="c1"># Construct the &#39;options&#39; part of the payload, generating representations</span>
-            <span class="c1"># for values and keys involved in the change, ensuring camelCase.</span>
-            <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">path</span> <span class="p">}</span>
+<span class="sd">        This function is automatically called by an `ObservableValue` instance</span>
+<span class="sd">        when its wrapped data is modified (e.g., via `append`, `__setitem__`).</span>
+<span class="sd">        It receives details about the change, converts the relevant data into</span>
+<span class="sd">        the required representation format, and sends an &#39;update&#39; command to the</span>
+<span class="sd">        Sidekick Viz UI.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            variable_name (str): The name under which the `ObservableValue` was</span>
+<span class="sd">                originally shown using `viz.show()`.</span>
+<span class="sd">            change_details (Dict[str, Any]): A dictionary provided by the</span>
+<span class="sd">                `ObservableValue` describing the change (e.g., type, path,</span>
+<span class="sd">                new value, old value).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Received observable update for &#39;</span><span class="si">{</span><span class="n">variable_name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">change_details</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Extract details from the notification.</span>
+            <span class="n">action_type</span> <span class="o">=</span> <span class="n">change_details</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span> <span class="c1"># e.g., &#39;setitem&#39;, &#39;append&#39;</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">change_details</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;path&quot;</span><span class="p">,</span> <span class="p">[])</span> <span class="c1"># Path within the data structure (list indices, dict keys)</span>
+
+            <span class="c1"># --- Prepare Payload Options ---</span>
+            <span class="c1"># Convert involved values/keys into representations for the UI.</span>
+            <span class="c1"># Keys here *must* be camelCase for the protocol.</span>
+            <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">path</span> <span class="c1"># Path is usually just list indices or dict keys</span>
+            <span class="p">}</span>
             <span class="k">if</span> <span class="s2">&quot;value&quot;</span> <span class="ow">in</span> <span class="n">change_details</span><span class="p">:</span>
+                <span class="c1"># Represent the new value involved in the change.</span>
                 <span class="n">options</span><span class="p">[</span><span class="s2">&quot;valueRepresentation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_representation</span><span class="p">(</span><span class="n">change_details</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">])</span>
-            <span class="k">if</span> <span class="s2">&quot;key&quot;</span> <span class="ow">in</span> <span class="n">change_details</span><span class="p">:</span> <span class="c1"># Relevant for dict operations</span>
+            <span class="k">if</span> <span class="s2">&quot;key&quot;</span> <span class="ow">in</span> <span class="n">change_details</span><span class="p">:</span> <span class="c1"># Relevant for dict operations like setitem.</span>
                 <span class="n">options</span><span class="p">[</span><span class="s2">&quot;keyRepresentation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_representation</span><span class="p">(</span><span class="n">change_details</span><span class="p">[</span><span class="s2">&quot;key&quot;</span><span class="p">])</span>
-            <span class="k">if</span> <span class="s2">&quot;length&quot;</span> <span class="ow">in</span> <span class="n">change_details</span><span class="p">:</span> <span class="c1"># Relevant for container size changes</span>
+            <span class="k">if</span> <span class="s2">&quot;length&quot;</span> <span class="ow">in</span> <span class="n">change_details</span><span class="p">:</span> <span class="c1"># New length after list/dict/set mutation.</span>
                 <span class="n">options</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">change_details</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">]</span>
 
-            <span class="c1"># Special handling for root &#39;set&#39; or &#39;clear&#39; on an ObservableValue:</span>
-            <span class="c1"># Resend the full representation of the observable&#39;s *current* value.</span>
-            <span class="k">if</span> <span class="n">action_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;set&quot;</span><span class="p">,</span> <span class="s2">&quot;clear&quot;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span> <span class="c1"># Only if path is empty (root change)</span>
+            <span class="c1"># --- Special Handling for Root Set/Clear ---</span>
+            <span class="c1"># If the *entire* ObservableValue was replaced (type &#39;set&#39;) or cleared</span>
+            <span class="c1"># (type &#39;clear&#39;) at the root (path is empty), we need to resend the</span>
+            <span class="c1"># complete representation of its *new* state.</span>
+            <span class="k">if</span> <span class="n">action_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;set&quot;</span><span class="p">,</span> <span class="s2">&quot;clear&quot;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
                 <span class="n">observable_instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">variable_name</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;value_or_observable&#39;</span><span class="p">)</span>
-                <span class="c1"># Ensure observable_instance is not None before getting representation</span>
-                <span class="k">if</span> <span class="n">observable_instance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">observable_instance</span><span class="p">,</span> <span class="n">ObservableValue</span><span class="p">):</span>
+                    <span class="c1"># Regenerate the full representation of the observable&#39;s *current* value.</span>
                     <span class="n">options</span><span class="p">[</span><span class="s2">&quot;valueRepresentation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_representation</span><span class="p">(</span><span class="n">observable_instance</span><span class="p">)</span>
-                    <span class="c1"># Ensure length is also updated for root set/clear</span>
-                    <span class="n">actual_data</span> <span class="o">=</span> <span class="n">observable_instance</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">observable_instance</span><span class="p">,</span> <span class="n">ObservableValue</span><span class="p">)</span> <span class="k">else</span> <span class="n">observable_instance</span>
-                    <span class="k">try</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">actual_data</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">actual_data</span><span class="p">,</span> <span class="s1">&#39;__len__&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
-                    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="c1"># Ensure the length is also updated for the root object.</span>
+                    <span class="n">actual_data</span> <span class="o">=</span> <span class="n">observable_instance</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">options</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">actual_data</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">actual_data</span><span class="p">,</span> <span class="s1">&#39;__len__&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+                    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                        <span class="n">options</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># Handle cases where len() isn&#39;t supported</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="c1"># If the observable was removed concurrently, we might not have it. Log and skip.</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Observable for &#39;</span><span class="si">{</span><span class="n">variable_name</span><span class="si">}</span><span class="s2">&#39; not found during root update. Skipping.&quot;</span><span class="p">)</span>
-                    <span class="k">return</span>
+                    <span class="c1"># This might happen if remove_variable was called concurrently. Log and skip.</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: ObservableValue for &#39;</span><span class="si">{</span><span class="n">variable_name</span><span class="si">}</span><span class="s2">&#39; not found during root update processing. Skipping update.&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="c1"># Avoid sending update if observable is gone</span>
 
-
-            <span class="c1"># Construct the full update payload.</span>
+            <span class="c1"># --- Construct and Send Update Command ---</span>
             <span class="n">update_payload</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action_type</span><span class="p">,</span>
-                <span class="s2">&quot;variableName&quot;</span><span class="p">:</span> <span class="n">variable_name</span><span class="p">,</span>
-                <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="n">options</span>
+                <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action_type</span><span class="p">,</span>          <span class="c1"># The type of change (&#39;setitem&#39;, &#39;append&#39;, etc.)</span>
+                <span class="s2">&quot;variableName&quot;</span><span class="p">:</span> <span class="n">variable_name</span><span class="p">,</span>  <span class="c1"># The top-level variable name being updated</span>
+                <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="n">options</span>              <span class="c1"># Contains path, representations, length etc.</span>
             <span class="p">}</span>
+            <span class="c1"># Send the granular update command to the UI.</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_send_update</span><span class="p">(</span><span class="n">update_payload</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="c1"># Log errors during the update processing but don&#39;t crash.</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Error processing update for observable &#39;</span><span class="si">{</span><span class="n">variable_name</span><span class="si">}</span><span class="s2">&#39;. Change: </span><span class="si">{</span><span class="n">change_details</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># Catch errors during update processing to prevent crashing the listener.</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Error processing observable update for &#39;</span><span class="si">{</span><span class="n">variable_name</span><span class="si">}</span><span class="s2">&#39;. Change: </span><span class="si">{</span><span class="n">change_details</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Viz.show">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.viz.Viz.show">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Displays or updates a variable in the Viz panel.</span>
 
-<span class="sd">        Shows the given `value` associated with the provided `name` in the Sidekick</span>
-<span class="sd">        Viz panel. If the `name` already exists, its display is updated.</span>
+<span class="sd">        Shows the given `value` under the specified `name` in the Sidekick Viz</span>
+<span class="sd">        panel. If a variable with the same `name` is already shown, its display</span>
+<span class="sd">        will be updated to reflect the new `value`.</span>
 
-<span class="sd">        If the `value` is an instance of :class:`sidekick.ObservableValue`, the Viz</span>
-<span class="sd">        panel will automatically listen for changes within that value (e.g., list</span>
-<span class="sd">        appends, dictionary updates) and update the UI accordingly, often highlighting</span>
-<span class="sd">        the specific change. This is the key to reactive visualization.</span>
+<span class="sd">        **Reactivity:** If the `value` you provide is an instance of</span>
+<span class="sd">        `sidekick.ObservableValue`, the Viz panel will automatically subscribe</span>
+<span class="sd">        to changes within that `ObservableValue`. When you modify the data</span>
+<span class="sd">        *through the `ObservableValue` wrapper* (e.g., `my_obs_list.append(5)`,</span>
+<span class="sd">        `my_obs_dict[&#39;key&#39;] = &#39;new&#39;`), the Viz panel UI will update automatically</span>
+<span class="sd">        to show the change, often highlighting the modified part. This provides</span>
+<span class="sd">        a powerful live view of your data.</span>
+
+<span class="sd">        For non-ObservableValues, the display shows a snapshot of the value at</span>
+<span class="sd">        the time `show()` is called. You need to call `show()` again with the</span>
+<span class="sd">        same name to update the display if the underlying non-observable value changes.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            name (str): The name to display for the variable (e.g., &quot;my_list&quot;, &quot;game_state&quot;).</span>
-<span class="sd">                Must be a non-empty string.</span>
-<span class="sd">            value (Any): The Python variable or value to display. This can be any</span>
-<span class="sd">                standard type (int, str, list, dict, set, etc.), a custom object,</span>
-<span class="sd">                or an :class:`sidekick.ObservableValue` wrapping one of these.</span>
+<span class="sd">            name (str): The name to display for this variable in the Viz panel</span>
+<span class="sd">                (e.g., &quot;my_list&quot;, &quot;game_state&quot;, &quot;counter&quot;). Must be a non-empty string.</span>
+<span class="sd">            value (Any): The Python variable or value you want to display. This can be</span>
+<span class="sd">                almost anything: numbers, strings, lists, dicts, sets, custom objects,</span>
+<span class="sd">                or an `ObservableValue` wrapping one of these.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: If `name` is empty or not a string.</span>
-
-<span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; data = {&quot;count&quot;: 0, &quot;items&quot;: [&quot;a&quot;, &quot;b&quot;]}</span>
-<span class="sd">            &gt;&gt;&gt; obs_list = sidekick.ObservableValue([10, 20])</span>
-<span class="sd">            &gt;&gt;&gt; player_obj = Player(&quot;Hero&quot;, 100) # Assuming Player is a custom class</span>
-<span class="sd">            &gt;&gt;&gt;</span>
-<span class="sd">            &gt;&gt;&gt; viz = sidekick.Viz()</span>
-<span class="sd">            &gt;&gt;&gt; viz.show(&quot;static_data&quot;, data)</span>
-<span class="sd">            &gt;&gt;&gt; viz.show(&quot;reactive_list&quot;, obs_list)</span>
-<span class="sd">            &gt;&gt;&gt; viz.show(&quot;player&quot;, player_obj)</span>
-<span class="sd">            &gt;&gt;&gt;</span>
-<span class="sd">            &gt;&gt;&gt; # Changes to obs_list will automatically update Sidekick</span>
-<span class="sd">            &gt;&gt;&gt; obs_list.append(30)</span>
-<span class="sd">            &gt;&gt;&gt; obs_list[0] = 5</span>
+<span class="sd">            SidekickConnectionError (or subclass): If the connection is not ready</span>
+<span class="sd">                or sending the command fails.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Variable name for viz.show() must be a non-empty string.&quot;</span><span class="p">)</span>
-            <span class="c1"># Raise ValueError for clarity</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Variable name for viz.show() must be a non-empty string.&quot;</span><span class="p">)</span>
 
-        <span class="c1"># --- Subscription Handling ---</span>
-        <span class="c1"># Unsubscribe from the previous ObservableValue if this variable name is being reused.</span>
+<span class="sd">        Examples:</span>
+<span class="sd">            &gt;&gt;&gt; # Simple static data</span>
+<span class="sd">            &gt;&gt;&gt; data = {&quot;count&quot;: 10, &quot;enabled&quot;: True}</span>
+<span class="sd">            &gt;&gt;&gt; viz = sidekick.Viz()</span>
+<span class="sd">            &gt;&gt;&gt; viz.show(&quot;configuration&quot;, data)</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # A reactive list using ObservableValue</span>
+<span class="sd">            &gt;&gt;&gt; items = sidekick.ObservableValue([&#39;apple&#39;, &#39;banana&#39;])</span>
+<span class="sd">            &gt;&gt;&gt; viz.show(&quot;shopping_list&quot;, items)</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # Now, changes to &#39;items&#39; update the UI automatically:</span>
+<span class="sd">            &gt;&gt;&gt; items.append(&#39;orange&#39;) # Viz panel updates</span>
+<span class="sd">            &gt;&gt;&gt; items[0] = &#39;pear&#39;      # Viz panel updates</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # Showing a custom object</span>
+<span class="sd">            &gt;&gt;&gt; class Player:</span>
+<span class="sd">            ...     def __init__(self, name): self.name = name; self.hp = 100</span>
+<span class="sd">            &gt;&gt;&gt; player1 = Player(&quot;Hero&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; viz.show(&quot;player_stats&quot;, player1)</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # To update the display for the non-observable &#39;data&#39;:</span>
+<span class="sd">            &gt;&gt;&gt; data[&quot;count&quot;] = 20</span>
+<span class="sd">            &gt;&gt;&gt; viz.show(&quot;configuration&quot;, data) # Need to call show() again</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># --- Validate Name ---</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Variable name for viz.show() must be a non-empty string.&quot;</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c1"># --- Handle Subscriptions for Reactivity ---</span>
+        <span class="n">unsubscribe_func</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UnsubscribeFunction</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Check if we were previously showing something under this name.</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="p">:</span>
             <span class="n">previous_entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="c1"># If the *previous* value was an ObservableValue, unsubscribe from it now</span>
+            <span class="c1"># because we are replacing it with a new value (which might or might not be observable).</span>
             <span class="k">if</span> <span class="n">previous_entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;unsubscribe&#39;</span><span class="p">):</span>
-                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Unsubscribing previous observable for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Unsubscribing previous observable for variable &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; before showing new value.&quot;</span><span class="p">)</span>
                  <span class="k">try</span><span class="p">:</span>
                      <span class="n">previous_entry</span><span class="p">[</span><span class="s1">&#39;unsubscribe&#39;</span><span class="p">]()</span>
                  <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                     <span class="c1"># Log error during unsubscribe but continue.</span>
                      <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Error during unsubscribe for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                 <span class="c1"># Clear the old unsubscribe function immediately after calling it.</span>
+                 <span class="n">previous_entry</span><span class="p">[</span><span class="s1">&#39;unsubscribe&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="n">unsubscribe_func</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UnsubscribeFunction</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="c1"># If the new value is an ObservableValue, subscribe to it.</span>
+        <span class="c1"># Now, check if the *new* value is an ObservableValue.</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ObservableValue</span><span class="p">):</span>
-            <span class="c1"># Create a partial function for the callback to include the variable name.</span>
+            <span class="c1"># If it is, subscribe to its changes. The callback will include the variable name.</span>
+            <span class="c1"># Use functools.partial to bind the current `name` to the callback handler.</span>
             <span class="n">update_callback</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_handle_observable_update</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Store the returned unsubscribe function so we can call it later</span>
+                <span class="c1"># if this variable is shown again or removed.</span>
                 <span class="n">unsubscribe_func</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">update_callback</span><span class="p">)</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Subscribed to ObservableValue for variable &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                 <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Error subscribing to ObservableValue for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                 <span class="n">unsubscribe_func</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># Ensure it&#39;s None if subscription failed</span>
+                 <span class="c1"># Log if subscription fails, but proceed without reactivity for this variable.</span>
+                 <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Failed to subscribe to ObservableValue for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                 <span class="n">unsubscribe_func</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># Ensure it&#39;s None on failure</span>
 
-        <span class="c1"># Store the value/observable and its unsubscribe function (if any).</span>
+        <span class="c1"># Store the new value (or ObservableValue wrapper) and its unsubscribe function (if any).</span>
+        <span class="c1"># This overwrites any previous entry for &#39;name&#39;.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;value_or_observable&#39;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span> <span class="s1">&#39;unsubscribe&#39;</span><span class="p">:</span> <span class="n">unsubscribe_func</span><span class="p">}</span>
         <span class="c1"># --- End Subscription Handling ---</span>
 
-        <span class="c1"># --- Generate Representation and Initial Payload ---</span>
+        <span class="c1"># --- Generate Initial Representation ---</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># Generate the visual representation of the value.</span>
+            <span class="c1"># Convert the value (or the value inside the ObservableValue)</span>
+            <span class="c1"># into the structured representation for the UI.</span>
             <span class="n">representation</span> <span class="o">=</span> <span class="n">_get_representation</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e_repr</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Error generating representation for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-            <span class="c1"># Create an error representation to display in Sidekick.</span>
-            <span class="n">representation</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;&lt;Representation Error: </span><span class="si">{</span><span class="n">e_repr</span><span class="si">}</span><span class="s2">&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;error_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+            <span class="c1"># Create an error representation to display in the UI instead.</span>
+            <span class="n">representation</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;&lt;Error creating display: </span><span class="si">{</span><span class="n">e_repr</span><span class="si">}</span><span class="s2">&gt;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;error_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="c1"># Basic unique ID</span>
+            <span class="p">}</span>
 
         <span class="c1"># Determine the length of the underlying data if possible.</span>
+        <span class="c1"># If it&#39;s an ObservableValue, get the length of the *wrapped* data.</span>
         <span class="n">actual_data</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ObservableValue</span><span class="p">)</span> <span class="k">else</span> <span class="n">value</span>
         <span class="n">data_length</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">actual_data</span><span class="p">,</span> <span class="s1">&#39;__len__&#39;</span><span class="p">):</span>
-            <span class="k">try</span><span class="p">:</span> <span class="n">data_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">actual_data</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="k">pass</span> <span class="c1"># len() might not be supported (e.g., for some custom objects)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">actual_data</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="k">pass</span> <span class="c1"># len() not supported for this type</span>
 
-        <span class="c1"># Construct the &#39;set&#39; payload to send the initial/updated full representation.</span>
+        <span class="c1"># --- Prepare and Send Initial &#39;Set&#39; Command ---</span>
+        <span class="c1"># Send the full representation to initially display or update the variable.</span>
+        <span class="c1"># Keys in options must be camelCase.</span>
         <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="c1"># &#39;set&#39; applies to the root path.</span>
-            <span class="s2">&quot;valueRepresentation&quot;</span><span class="p">:</span> <span class="n">representation</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="c1"># An empty path means we&#39;re setting the root variable.</span>
+            <span class="s2">&quot;valueRepresentation&quot;</span><span class="p">:</span> <span class="n">representation</span> <span class="c1"># The generated structure.</span>
         <span class="p">}</span>
+        <span class="c1"># Include length if available.</span>
         <span class="k">if</span> <span class="n">data_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">options</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_length</span>
 
-        <span class="n">initial_payload</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;set&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;variableName&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+        <span class="n">set_payload</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;set&quot;</span><span class="p">,</span>             <span class="c1"># Action &#39;set&#39; replaces the variable display.</span>
+            <span class="s2">&quot;variableName&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>        <span class="c1"># The name to show in the UI.</span>
             <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="n">options</span>
         <span class="p">}</span>
-        <span class="c1"># --- End Payload Construction ---</span>
-
-        <span class="c1"># Send the initial &#39;set&#39; update command.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_send_update</span><span class="p">(</span><span class="n">initial_payload</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_send_update</span><span class="p">(</span><span class="n">set_payload</span><span class="p">)</span> <span class="c1"># Send the command.</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Sent &#39;set&#39; update for variable &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span></div>
 
 
@@ -403,40 +639,50 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">remove_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes a previously shown variable from the Viz panel display.</span>
 
-<span class="sd">        If the variable was an :class:`sidekick.ObservableValue`, the Viz panel</span>
-<span class="sd">        will stop listening for its changes.</span>
+<span class="sd">        If the variable currently shown under this `name` was an `ObservableValue`,</span>
+<span class="sd">        this method also automatically unsubscribes from its changes, stopping</span>
+<span class="sd">        any further automatic updates for it.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            name (str): The name of the variable to remove (the same name used in `show()`).</span>
-
-<span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; viz.show(&quot;temporary_var&quot;, 123)</span>
-<span class="sd">            &gt;&gt;&gt; # ... later ...</span>
-<span class="sd">            &gt;&gt;&gt; viz.remove_variable(&quot;temporary_var&quot;)</span>
+<span class="sd">            name (str): The exact name of the variable to remove (the same name</span>
+<span class="sd">                that was used in the corresponding `show()` call).</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="p">:</span>
-            <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="c1"># Remove from local tracking</span>
-            <span class="c1"># Unsubscribe if an unsubscribe function exists for this variable.</span>
-            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;unsubscribe&#39;</span><span class="p">):</span>
-                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Unsubscribing on remove_variable for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
-                 <span class="k">try</span><span class="p">:</span>
-                     <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;unsubscribe&#39;</span><span class="p">]()</span>
-                 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Error during unsubscribe for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-            <span class="c1"># Send the &#39;removeVariable&#39; command to Sidekick.</span>
+<span class="sd">        Examples:</span>
+<span class="sd">            &gt;&gt;&gt; viz = sidekick.Viz()</span>
+<span class="sd">            &gt;&gt;&gt; temp_data = [1, 2, 3]</span>
+<span class="sd">            &gt;&gt;&gt; viz.show(&quot;temporary_variable&quot;, temp_data)</span>
+<span class="sd">            &gt;&gt;&gt; # ... time passes, data is no longer needed ...</span>
+<span class="sd">            &gt;&gt;&gt; viz.remove_variable(&quot;temporary_variable&quot;) # Removes it from Sidekick panel</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if the variable is currently being tracked.</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="p">:</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="c1"># Remove from our internal tracking.</span>
+
+            <span class="c1"># --- Unsubscribe If Necessary ---</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;unsubscribe&#39;</span><span class="p">):</span>
+                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Unsubscribing from observable &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; on removal.&quot;</span><span class="p">)</span>
+                 <span class="k">try</span><span class="p">:</span>
+                     <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;unsubscribe&#39;</span><span class="p">]()</span> <span class="c1"># Call the cleanup function.</span>
+                 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                     <span class="c1"># Log errors during unsubscribe but continue removal.</span>
+                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Error during unsubscribe for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; on removal: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># --- Send Remove Command to UI ---</span>
+            <span class="c1"># Keys must be camelCase.</span>
             <span class="n">remove_payload</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;removeVariable&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;removeVariable&quot;</span><span class="p">,</span> <span class="c1"># Specific action to remove a top-level variable</span>
                 <span class="s2">&quot;variableName&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
-                <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">{}</span> <span class="c1"># No specific options needed for removal.</span>
+                <span class="c1"># &quot;options&quot;: {} # No options needed for removal currently. Protocol expects options though.</span>
+                <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">{}</span> <span class="c1"># Send empty options object as per protocol expectation (optional keys)</span>
             <span class="p">}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_send_update</span><span class="p">(</span><span class="n">remove_payload</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Sent remove_variable update for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_send_update</span><span class="p">(</span><span class="n">remove_payload</span><span class="p">)</span> <span class="c1"># Send the command.</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Sent remove_variable command for &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Variable &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; not found for removal.&quot;</span><span class="p">)</span></div>
+            <span class="c1"># Variable wasn&#39;t found, maybe already removed or never shown.</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Variable &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; not found for removal. Maybe it was already removed?&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Viz.remove">
@@ -444,27 +690,38 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes the entire Viz panel instance from the Sidekick UI.</span>
 
-<span class="sd">        This also automatically unsubscribes from any tracked ObservableValues</span>
-<span class="sd">        associated with variables currently shown in this panel.</span>
+<span class="sd">        This cleans up all variables currently displayed in this specific Viz</span>
+<span class="sd">        panel and automatically unsubscribes from any `ObservableValue` instances</span>
+<span class="sd">        that were being tracked by it.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Requesting removal of Viz panel &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
-        <span class="c1"># Unsubscribe from all tracked observables before sending the remove command.</span>
-        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span> <span class="c1"># Iterate over a copy</span>
+
+        <span class="c1"># --- Unsubscribe from ALL tracked observables FIRST ---</span>
+        <span class="c1"># Iterate over a copy of the keys because we&#39;re modifying the dictionary.</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="c1"># Remove from tracking</span>
             <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;unsubscribe&#39;</span><span class="p">):</span>
                  <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Unsubscribing from &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; during panel removal.&quot;</span><span class="p">)</span>
                  <span class="k">try</span><span class="p">:</span>
                      <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;unsubscribe&#39;</span><span class="p">]()</span>
                  <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Error unsubscribing from &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; during remove: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="c1"># Remove from local tracking as we go.</span>
-            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Viz &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Error unsubscribing from &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; during panel remove: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
+        <span class="c1"># Now call the base class&#39;s remove() method, which sends the &#39;remove&#39; command</span>
+        <span class="c1"># for the whole module instance and cleans up base class resources.</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_reset_specific_callbacks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resets Viz-specific state (subscriptions) on removal.&quot;&quot;&quot;</span>
-        <span class="c1"># Unsubscribing is handled in the main remove() method for Viz.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resets Viz-specific state (subscriptions) when the module is removed.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            The actual unsubscribing logic is currently handled directly within</span>
+<span class="sd">            the overridden `remove()` method for Viz to ensure it happens *before*</span>
+<span class="sd">            the base `remove()` command is sent. This method primarily just</span>
+<span class="sd">            clears the tracking dictionary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Called by BaseModule.remove()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_shown_variables</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
 
 </pre></div>

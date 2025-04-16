@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>sidekick &mdash; Sidekick Python Library 0.0.3 documentation</title>
+  <title>sidekick &mdash; Sidekick Python Library 0.0.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=47de8214"></script>
+      <script src="_static/documentation_options.js?v=8c5712d9"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -113,6 +113,20 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="sidekick.html#module-sidekick.connection">sidekick.connection module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.SidekickConnectionError"><code class="docutils literal notranslate"><span class="pre">SidekickConnectionError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.SidekickConnectionRefusedError"><code class="docutils literal notranslate"><span class="pre">SidekickConnectionRefusedError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.connection.SidekickConnectionRefusedError.url"><code class="docutils literal notranslate"><span class="pre">SidekickConnectionRefusedError.url</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.connection.SidekickConnectionRefusedError.original_exception"><code class="docutils literal notranslate"><span class="pre">SidekickConnectionRefusedError.original_exception</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.SidekickTimeoutError"><code class="docutils literal notranslate"><span class="pre">SidekickTimeoutError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.connection.SidekickTimeoutError.timeout"><code class="docutils literal notranslate"><span class="pre">SidekickTimeoutError.timeout</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.SidekickDisconnectedError"><code class="docutils literal notranslate"><span class="pre">SidekickDisconnectedError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.connection.SidekickDisconnectedError.reason"><code class="docutils literal notranslate"><span class="pre">SidekickDisconnectedError.reason</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.ConnectionStatus"><code class="docutils literal notranslate"><span class="pre">ConnectionStatus</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.connection.ConnectionStatus.DISCONNECTED"><code class="docutils literal notranslate"><span class="pre">ConnectionStatus.DISCONNECTED</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.connection.ConnectionStatus.CONNECTING"><code class="docutils literal notranslate"><span class="pre">ConnectionStatus.CONNECTING</span></code></a></li>
@@ -128,8 +142,6 @@
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.close_connection"><code class="docutils literal notranslate"><span class="pre">close_connection()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.run_forever"><code class="docutils literal notranslate"><span class="pre">run_forever()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.shutdown"><code class="docutils literal notranslate"><span class="pre">shutdown()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.ensure_ready"><code class="docutils literal notranslate"><span class="pre">ensure_ready()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.flush_messages"><code class="docutils literal notranslate"><span class="pre">flush_messages()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.register_message_handler"><code class="docutils literal notranslate"><span class="pre">register_message_handler()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.unregister_message_handler"><code class="docutils literal notranslate"><span class="pre">unregister_message_handler()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.register_global_message_handler"><code class="docutils literal notranslate"><span class="pre">register_global_message_handler()</span></code></a></li>
@@ -224,13 +236,9 @@
 <li class="toctree-l2"><a class="reference internal" href="sidekick.html#module-sidekick">Module contents</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.set_url"><code class="docutils literal notranslate"><span class="pre">set_url()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.set_config"><code class="docutils literal notranslate"><span class="pre">set_config()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.close_connection"><code class="docutils literal notranslate"><span class="pre">close_connection()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.activate_connection"><code class="docutils literal notranslate"><span class="pre">activate_connection()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.clear_all"><code class="docutils literal notranslate"><span class="pre">clear_all()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.register_global_message_handler"><code class="docutils literal notranslate"><span class="pre">register_global_message_handler()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.ensure_ready"><code class="docutils literal notranslate"><span class="pre">ensure_ready()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.run_forever"><code class="docutils literal notranslate"><span class="pre">run_forever()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.flush_messages"><code class="docutils literal notranslate"><span class="pre">flush_messages()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.shutdown"><code class="docutils literal notranslate"><span class="pre">shutdown()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.ObservableValue"><code class="docutils literal notranslate"><span class="pre">ObservableValue</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.ObservableValue.__contains__"><code class="docutils literal notranslate"><span class="pre">ObservableValue.__contains__()</span></code></a></li>
