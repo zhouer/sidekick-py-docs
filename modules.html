@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>sidekick &mdash; Sidekick Python Library 0.0.4 documentation</title>
+  <title>sidekick &mdash; Sidekick Python Library 0.0.5 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=8c5712d9"></script>
+      <script src="_static/documentation_options.js?v=282f96c0"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -102,12 +102,22 @@
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.target_id"><code class="docutils literal notranslate"><span class="pre">Canvas.target_id</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.width"><code class="docutils literal notranslate"><span class="pre">Canvas.width</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.height"><code class="docutils literal notranslate"><span class="pre">Canvas.height</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.ONSCREEN_BUFFER_ID"><code class="docutils literal notranslate"><span class="pre">Canvas.ONSCREEN_BUFFER_ID</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.__init__"><code class="docutils literal notranslate"><span class="pre">Canvas.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#id0"><code class="docutils literal notranslate"><span class="pre">Canvas.width</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#id1"><code class="docutils literal notranslate"><span class="pre">Canvas.height</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.on_click"><code class="docutils literal notranslate"><span class="pre">Canvas.on_click()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.buffer"><code class="docutils literal notranslate"><span class="pre">Canvas.buffer()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.clear"><code class="docutils literal notranslate"><span class="pre">Canvas.clear()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.config"><code class="docutils literal notranslate"><span class="pre">Canvas.config()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.draw_line"><code class="docutils literal notranslate"><span class="pre">Canvas.draw_line()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.draw_rect"><code class="docutils literal notranslate"><span class="pre">Canvas.draw_rect()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.draw_circle"><code class="docutils literal notranslate"><span class="pre">Canvas.draw_circle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.draw_polyline"><code class="docutils literal notranslate"><span class="pre">Canvas.draw_polyline()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.draw_polygon"><code class="docutils literal notranslate"><span class="pre">Canvas.draw_polygon()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.draw_ellipse"><code class="docutils literal notranslate"><span class="pre">Canvas.draw_ellipse()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.draw_text"><code class="docutils literal notranslate"><span class="pre">Canvas.draw_text()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.remove"><code class="docutils literal notranslate"><span class="pre">Canvas.remove()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.canvas.Canvas.__del__"><code class="docutils literal notranslate"><span class="pre">Canvas.__del__()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -145,7 +155,6 @@
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.register_message_handler"><code class="docutils literal notranslate"><span class="pre">register_message_handler()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.unregister_message_handler"><code class="docutils literal notranslate"><span class="pre">unregister_message_handler()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.register_global_message_handler"><code class="docutils literal notranslate"><span class="pre">register_global_message_handler()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.connection.get_next_command_id"><code class="docutils literal notranslate"><span class="pre">get_next_command_id()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="sidekick.html#module-sidekick.console">sidekick.console module</a><ul>
@@ -154,7 +163,6 @@
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.console.Console.__init__"><code class="docutils literal notranslate"><span class="pre">Console.__init__()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.console.Console.on_input_text"><code class="docutils literal notranslate"><span class="pre">Console.on_input_text()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.console.Console.print"><code class="docutils literal notranslate"><span class="pre">Console.print()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.console.Console.log"><code class="docutils literal notranslate"><span class="pre">Console.log()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.console.Console.clear"><code class="docutils literal notranslate"><span class="pre">Console.clear()</span></code></a></li>
 </ul>
 </li>
@@ -179,6 +187,8 @@
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.grid.Grid.num_columns"><code class="docutils literal notranslate"><span class="pre">Grid.num_columns</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.grid.Grid.num_rows"><code class="docutils literal notranslate"><span class="pre">Grid.num_rows</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.grid.Grid.__init__"><code class="docutils literal notranslate"><span class="pre">Grid.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#id2"><code class="docutils literal notranslate"><span class="pre">Grid.num_columns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#id3"><code class="docutils literal notranslate"><span class="pre">Grid.num_rows</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.grid.Grid.on_click"><code class="docutils literal notranslate"><span class="pre">Grid.on_click()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.grid.Grid.set_color"><code class="docutils literal notranslate"><span class="pre">Grid.set_color()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.grid.Grid.set_text"><code class="docutils literal notranslate"><span class="pre">Grid.set_text()</span></code></a></li>
@@ -274,6 +284,8 @@
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Grid.__init__"><code class="docutils literal notranslate"><span class="pre">Grid.__init__()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Grid.clear"><code class="docutils literal notranslate"><span class="pre">Grid.clear()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Grid.clear_cell"><code class="docutils literal notranslate"><span class="pre">Grid.clear_cell()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#id6"><code class="docutils literal notranslate"><span class="pre">Grid.num_columns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#id7"><code class="docutils literal notranslate"><span class="pre">Grid.num_rows</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Grid.on_click"><code class="docutils literal notranslate"><span class="pre">Grid.on_click()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Grid.set_color"><code class="docutils literal notranslate"><span class="pre">Grid.set_color()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Grid.set_text"><code class="docutils literal notranslate"><span class="pre">Grid.set_text()</span></code></a></li>
@@ -283,7 +295,6 @@
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Console.target_id"><code class="docutils literal notranslate"><span class="pre">Console.target_id</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Console.__init__"><code class="docutils literal notranslate"><span class="pre">Console.__init__()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Console.clear"><code class="docutils literal notranslate"><span class="pre">Console.clear()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Console.log"><code class="docutils literal notranslate"><span class="pre">Console.log()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Console.on_input_text"><code class="docutils literal notranslate"><span class="pre">Console.on_input_text()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Console.print"><code class="docutils literal notranslate"><span class="pre">Console.print()</span></code></a></li>
 </ul>
@@ -310,12 +321,36 @@
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.target_id"><code class="docutils literal notranslate"><span class="pre">Canvas.target_id</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.width"><code class="docutils literal notranslate"><span class="pre">Canvas.width</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.height"><code class="docutils literal notranslate"><span class="pre">Canvas.height</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.ONSCREEN_BUFFER_ID"><code class="docutils literal notranslate"><span class="pre">Canvas.ONSCREEN_BUFFER_ID</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.__del__"><code class="docutils literal notranslate"><span class="pre">Canvas.__del__()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.__init__"><code class="docutils literal notranslate"><span class="pre">Canvas.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.buffer"><code class="docutils literal notranslate"><span class="pre">Canvas.buffer()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.clear"><code class="docutils literal notranslate"><span class="pre">Canvas.clear()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.config"><code class="docutils literal notranslate"><span class="pre">Canvas.config()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.draw_circle"><code class="docutils literal notranslate"><span class="pre">Canvas.draw_circle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.draw_ellipse"><code class="docutils literal notranslate"><span class="pre">Canvas.draw_ellipse()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.draw_line"><code class="docutils literal notranslate"><span class="pre">Canvas.draw_line()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.draw_polygon"><code class="docutils literal notranslate"><span class="pre">Canvas.draw_polygon()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.draw_polyline"><code class="docutils literal notranslate"><span class="pre">Canvas.draw_polyline()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.draw_rect"><code class="docutils literal notranslate"><span class="pre">Canvas.draw_rect()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.draw_text"><code class="docutils literal notranslate"><span class="pre">Canvas.draw_text()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#id10"><code class="docutils literal notranslate"><span class="pre">Canvas.height</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.on_click"><code class="docutils literal notranslate"><span class="pre">Canvas.on_click()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.Canvas.remove"><code class="docutils literal notranslate"><span class="pre">Canvas.remove()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#id11"><code class="docutils literal notranslate"><span class="pre">Canvas.width</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.SidekickConnectionError"><code class="docutils literal notranslate"><span class="pre">SidekickConnectionError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.SidekickConnectionRefusedError"><code class="docutils literal notranslate"><span class="pre">SidekickConnectionRefusedError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.SidekickConnectionRefusedError.url"><code class="docutils literal notranslate"><span class="pre">SidekickConnectionRefusedError.url</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.SidekickConnectionRefusedError.original_exception"><code class="docutils literal notranslate"><span class="pre">SidekickConnectionRefusedError.original_exception</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.SidekickTimeoutError"><code class="docutils literal notranslate"><span class="pre">SidekickTimeoutError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.SidekickTimeoutError.timeout"><code class="docutils literal notranslate"><span class="pre">SidekickTimeoutError.timeout</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="sidekick.html#sidekick.SidekickDisconnectedError"><code class="docutils literal notranslate"><span class="pre">SidekickDisconnectedError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="sidekick.html#sidekick.SidekickDisconnectedError.reason"><code class="docutils literal notranslate"><span class="pre">SidekickDisconnectedError.reason</span></code></a></li>
 </ul>
 </li>
 </ul>

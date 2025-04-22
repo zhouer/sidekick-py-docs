@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>sidekick.utils &mdash; Sidekick Python Library 0.0.3 documentation</title>
+  <title>sidekick.utils &mdash; Sidekick Python Library 0.0.5 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=47de8214"></script>
+      <script src="../../_static/documentation_options.js?v=282f96c0"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -74,15 +74,18 @@
            <div itemprop="articleBody">
              
   <h1>Source code for sidekick.utils</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Internal Utility Functions for the Sidekick Library.</span>
+<span></span><span class="sd">&quot;&quot;&quot;Internal Utility Functions for the Sidekick Library.</span>
 
-<span class="sd">This module contains helper functions that are used by other parts of the</span>
-<span class="sd">Sidekick library behind the scenes. You typically won&#39;t need to use these</span>
-<span class="sd">functions directly in your own scripts.</span>
+<span class="sd">This module contains helper functions used internally by other parts of the</span>
+<span class="sd">Sidekick library.</span>
+
+<span class="sd">Warning:</span>
+<span class="sd">    Functions and variables in this module are considered internal implementation</span>
+<span class="sd">    details. You should not need to import or use them directly in your scripts,</span>
+<span class="sd">    as they might change without notice in future versions.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="c1"># A simple counter to help generate unique IDs.</span>
+<span class="c1"># A simple counter shared across the library instance to help generate unique IDs.</span>
 <span class="n">_instance_counter</span> <span class="o">=</span> <span class="mi">0</span>
 
 <div class="viewcode-block" id="generate_unique_id">
@@ -90,23 +93,29 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">generate_unique_id</span><span class="p">(</span><span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates a simple, sequential unique ID for a module instance.</span>
 
-<span class="sd">    This is used internally when you create a Sidekick module (like a Grid</span>
-<span class="sd">    or Console) without providing your own specific `instance_id`. It helps</span>
-<span class="sd">    the library distinguish between different modules of the same type.</span>
+<span class="sd">    This function is used internally by Sidekick module classes (like `Grid`,</span>
+<span class="sd">    `Console`, etc.) when you create an instance without providing your own specific</span>
+<span class="sd">    `instance_id`. It ensures that each automatically generated ID is unique</span>
+<span class="sd">    within the current script run, helping the library distinguish between</span>
+<span class="sd">    different modules of the same type (e.g., multiple Grids).</span>
 
-<span class="sd">    The generated IDs look like &quot;grid-1&quot;, &quot;console-2&quot;, etc.</span>
+<span class="sd">    The generated IDs follow a simple &quot;prefix-number&quot; format (e.g., &quot;grid-1&quot;,</span>
+<span class="sd">    &quot;console-2&quot;).</span>
 
 <span class="sd">    Note:</span>
-<span class="sd">        This is intended for internal library use. Relying on the exact format</span>
-<span class="sd">        of these generated IDs is not recommended.</span>
+<span class="sd">        This is intended for internal library use. You should not rely on the</span>
+<span class="sd">        specific format of these generated IDs in your code, as it could change.</span>
+<span class="sd">        Always use the `target_id` attribute of a module instance if you need</span>
+<span class="sd">        to reference its ID.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        prefix (str): A string indicating the type of module, like &quot;grid&quot;</span>
-<span class="sd">            or &quot;console&quot;.</span>
+<span class="sd">        prefix (str): A descriptive prefix indicating the type of module,</span>
+<span class="sd">            such as &quot;grid&quot;, &quot;console&quot;, or &quot;canvas&quot;.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        str: A unique identifier string for the new instance.</span>
+<span class="sd">        str: A unique identifier string for the new instance (e.g., &quot;grid-1&quot;).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Use the global counter to ensure uniqueness across calls within the script.</span>
     <span class="k">global</span> <span class="n">_instance_counter</span>
     <span class="n">_instance_counter</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">_instance_counter</span><span class="si">}</span><span class="s2">&quot;</span></div>

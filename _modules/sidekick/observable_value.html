@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>sidekick.observable_value &mdash; Sidekick Python Library 0.0.3 documentation</title>
+  <title>sidekick.observable_value &mdash; Sidekick Python Library 0.0.5 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=47de8214"></script>
+      <script src="../../_static/documentation_options.js?v=282f96c0"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -74,37 +74,53 @@
            <div itemprop="articleBody">
              
   <h1>Source code for sidekick.observable_value</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Provides the ObservableValue class for reactive Sidekick visualizations.</span>
+<span></span><span class="sd">&quot;&quot;&quot;Provides the ObservableValue class for making Sidekick visualizations reactive.</span>
 
-<span class="sd">This module contains the `ObservableValue` class. You can think of it as a</span>
-<span class="sd">special wrapper or container that you put around your regular Python data</span>
-<span class="sd">(like lists, dictionaries, or sets).</span>
+<span class="sd">This module contains the `ObservableValue` class, a special wrapper you can use</span>
+<span class="sd">around your regular Python lists, dictionaries, or sets.</span>
 
-<span class="sd">The main purpose of `ObservableValue` is to work seamlessly with the</span>
-<span class="sd">`sidekick.Viz` module. When you display an `ObservableValue` in the Viz panel:</span>
-<span class="sd">`viz.show(&quot;my_data&quot;, sidekick.ObservableValue([1, 2]))`</span>
+<span class="sd">Why use it?</span>
 
-<span class="sd">...and then modify the data *using the wrapper&#39;s methods*:</span>
-<span class="sd">`my_data.append(3)` or `my_data[0] = 10`</span>
+<span class="sd">The main purpose of `ObservableValue` is to work hand-in-hand with the</span>
+<span class="sd">`sidekick.Viz` module. When you display an `ObservableValue` using `viz.show()`,</span>
+<span class="sd">the Viz panel in Sidekick gains a superpower: it **automatically updates** its</span>
+<span class="sd">display whenever you modify the data inside the `ObservableValue`.</span>
 
-<span class="sd">...the `ObservableValue` automatically tells the `Viz` panel *exactly* what changed.</span>
-<span class="sd">This allows the Viz panel in Sidekick to update its display efficiently, often</span>
-<span class="sd">highlighting the specific change, making it much easier to see how your data</span>
-<span class="sd">evolves over time without needing to call `viz.show()` repeatedly.</span>
+<span class="sd">How it works:</span>
 
-<span class="sd">Use this when you want the variable display in Sidekick (`Viz` module) to</span>
-<span class="sd">automatically react to changes in your Python lists, dictionaries, or sets.</span>
+<span class="sd">1.  Wrap your data: `my_list = sidekick.ObservableValue([1, 2])`</span>
+<span class="sd">2.  Show it in Viz: `viz.show(&quot;My List&quot;, my_list)`</span>
+<span class="sd">3.  Modify the data **using the wrapper&#39;s methods**:</span>
+<span class="sd">    *   `my_list.append(3)`</span>
+<span class="sd">    *   `my_list[0] = 99`</span>
+<span class="sd">    *   `del my_list[1]`</span>
+<span class="sd">4.  Observe: The Viz panel in Sidekick updates instantly to show these changes,</span>
+<span class="sd">    often highlighting exactly what was modified.</span>
+
+<span class="sd">This makes it much easier to track how your data structures evolve during your</span>
+<span class="sd">script&#39;s execution without needing to manually call `viz.show()` after every single change.</span>
+
+<span class="sd">Note on Limitations:</span>
+
+<span class="sd">*   Automatic updates only occur when you modify the data *through* the</span>
+<span class="sd">    `ObservableValue` wrapper&#39;s methods (like `.append()`, `[key]=value`, `.add()`).</span>
+<span class="sd">    Changes made directly to the underlying object obtained via `.get()` might not</span>
+<span class="sd">    be detected automatically.</span>
+<span class="sd">*   For nested structures (e.g., a list inside a dictionary), you would need to</span>
+<span class="sd">    wrap the inner mutable structures with `ObservableValue` as well if you want</span>
+<span class="sd">    their internal changes to trigger automatic updates.</span>
+<span class="sd">*   Changes made by directly setting attributes on a wrapped *custom object* are</span>
+<span class="sd">    generally not detected automatically.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span> <span class="c1"># Used for checking mutable types like list, dict, set</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span> <span class="c1"># Used for checking mutable collection types like list, dict, set</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
 
-<span class="c1"># Type Aliases for clarity</span>
-<span class="c1"># A function that receives details about a change.</span>
+<span class="c1"># Type Alias for clarity: Represents a function that subscribers provide to receive notifications.</span>
+<span class="c1"># The function should accept one argument: a dictionary containing change details.</span>
 <span class="n">SubscriptionCallback</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="kc">None</span><span class="p">]</span>
-<span class="c1"># A function that, when called, stops a subscription.</span>
+<span class="c1"># Type Alias for clarity: Represents the function returned by &#39;subscribe&#39;, which can be called to stop the subscription.</span>
 <span class="n">UnsubscribeFunction</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span>
 
 <div class="viewcode-block" id="ObservableValue">
@@ -112,101 +128,107 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">ObservableValue</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Wraps a Python value (list, dict, set) to notify subscribers about changes.</span>
 
-<span class="sd">    Use this class to make your data &quot;reactive&quot; when displayed in the Sidekick</span>
-<span class="sd">    `Viz` panel. Wrap your mutable data structures (lists, dictionaries, sets)</span>
-<span class="sd">    in an `ObservableValue`:</span>
+<span class="sd">    Use this class to make your data &quot;reactive&quot; when displayed using the `sidekick.Viz`</span>
+<span class="sd">    module. By wrapping mutable data structures (lists, dictionaries, sets) in an</span>
+<span class="sd">    `ObservableValue`, you enable the Viz panel in Sidekick to update its display</span>
+<span class="sd">    automatically whenever you modify the wrapped data through this wrapper object.</span>
 
-<span class="sd">    `my_list = sidekick.ObservableValue([1, 2])`</span>
-<span class="sd">    `my_dict = sidekick.ObservableValue({&#39;a&#39;: 1})`</span>
-<span class="sd">    `my_set = sidekick.ObservableValue({10, 20})`</span>
+<span class="sd">    This is achieved by intercepting common modification methods (like `append`,</span>
+<span class="sd">    `__setitem__`, `update`, `add`, `clear`, etc.) and sending notifications</span>
+<span class="sd">    after the operation completes.</span>
 
-<span class="sd">    Then, when you display them using `viz.show(&quot;data&quot;, my_list)`, the Viz panel</span>
-<span class="sd">    will automatically update when you modify the data *through the wrapper*.</span>
-<span class="sd">    For example:</span>
+<span class="sd">    Basic Usage:</span>
+<span class="sd">        &gt;&gt;&gt; import sidekick</span>
+<span class="sd">        &gt;&gt;&gt; viz = sidekick.Viz() # Assuming Viz panel is ready</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; # Wrap a list</span>
+<span class="sd">        &gt;&gt;&gt; shopping_list = sidekick.ObservableValue([&#39;apples&#39;, &#39;bananas&#39;])</span>
+<span class="sd">        &gt;&gt;&gt; viz.show(&quot;Groceries&quot;, shopping_list)</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; # Modify through the wrapper - Viz updates automatically!</span>
+<span class="sd">        &gt;&gt;&gt; shopping_list.append(&#39;carrots&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; shopping_list[0] = &#39;blueberries&#39;</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; # Wrap a dictionary</span>
+<span class="sd">        &gt;&gt;&gt; config = sidekick.ObservableValue({&#39;theme&#39;: &#39;dark&#39;, &#39;autosave&#39;: False})</span>
+<span class="sd">        &gt;&gt;&gt; viz.show(&quot;Settings&quot;, config)</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; # Modify through the wrapper - Viz updates automatically!</span>
+<span class="sd">        &gt;&gt;&gt; config[&#39;autosave&#39;] = True</span>
+<span class="sd">        &gt;&gt;&gt; config.update({&#39;fontSize&#39;: 12})</span>
+<span class="sd">        &gt;&gt;&gt; del config[&#39;theme&#39;]</span>
 
-<span class="sd">    - `my_list.append(3)`   -&gt; Notifies Viz about the append.</span>
-<span class="sd">    - `my_list[0] = 100`    -&gt; Notifies Viz about the item set.</span>
-<span class="sd">    - `my_dict[&#39;b&#39;] = 2`    -&gt; Notifies Viz about the item set.</span>
-<span class="sd">    - `my_dict.update({&#39;c&#39;: 3})` -&gt; Notifies Viz about the update.</span>
-<span class="sd">    - `my_set.add(30)`      -&gt; Notifies Viz about the addition.</span>
-<span class="sd">    - `del my_list[1]`      -&gt; Notifies Viz about the item deletion.</span>
+<span class="sd">    Key Benefit: Simplifies tracking data changes visually in Sidekick, as you</span>
+<span class="sd">    don&#39;t need repeated calls to `viz.show()` after each modification to an</span>
+<span class="sd">    observed value.</span>
 
-<span class="sd">    You can also replace the entire wrapped value using `.set(new_value)`, which</span>
-<span class="sd">    also triggers a notification.</span>
-
-<span class="sd">    **Important Limitations:**</span>
-<span class="sd">    - It primarily works by intercepting common methods (`append`, `__setitem__`, etc.)</span>
-<span class="sd">      of standard Python lists, dicts, and sets. It might not automatically detect</span>
-<span class="sd">      changes made through less common methods or if you modify the internal</span>
-<span class="sd">      structure of nested objects *without* going through the `ObservableValue` wrapper.</span>
-<span class="sd">    - If you wrap a custom object, changes made by directly setting attributes</span>
-<span class="sd">      on the *wrapped object* (e.g., `my_obs_obj.get().some_attribute = 5`)</span>
-<span class="sd">      will **not** be automatically detected. You would need to call</span>
-<span class="sd">      `my_obs_obj.set(my_obs_obj.get())` or trigger a notification manually if</span>
-<span class="sd">      the object had such a mechanism, or re-wrap mutable attributes within</span>
-<span class="sd">      the object with their own `ObservableValue`.</span>
-
-<span class="sd">    The notifications sent include details like the type of change (&quot;setitem&quot;,</span>
-<span class="sd">    &quot;append&quot;, &quot;add_set&quot;, etc.), the path to the change within the structure</span>
-<span class="sd">    (e.g., list index, dict key), and the involved values.</span>
+<span class="sd">    See the module docstring for important limitations regarding direct modification</span>
+<span class="sd">    of unwrapped values or attributes of wrapped custom objects.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># --- Internal Attributes ---</span>
-    <span class="c1"># Define names of internal attributes used by ObservableValue itself.</span>
-    <span class="c1"># This helps __getattr__ and __setattr__ distinguish between internal state</span>
-    <span class="c1"># and attributes of the wrapped value.</span>
+    <span class="c1"># Define names of attributes used internally by ObservableValue itself.</span>
+    <span class="c1"># This helps __getattr__ and __setattr__ distinguish between accessing/setting</span>
+    <span class="c1"># internal state vs. delegating to the wrapped value.</span>
     <span class="n">_obs_internal_attrs</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_value&#39;</span><span class="p">,</span> <span class="s1">&#39;_subscribers&#39;</span><span class="p">,</span> <span class="s1">&#39;_obs_value_id&#39;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ObservableValue.__init__">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_value</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the ObservableValue by wrapping the given value.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the ObservableValue by wrapping the provided Python value.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            initial_value: The Python value (e.g., list, dict, set, primitive)</span>
-<span class="sd">                that you want to observe for changes.</span>
+<span class="sd">            initial_value: The Python value (e.g., a list, dict, set, number,</span>
+<span class="sd">                string, etc.) that you want to make observable.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># The actual Python value being wrapped.</span>
+        <span class="c1"># The actual Python object being wrapped and observed.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">initial_value</span>
-        <span class="c1"># A set to store callback functions that should be notified on changes.</span>
+        <span class="c1"># A set holding the callback functions of active subscribers (like Viz).</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_subscribers</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="n">SubscriptionCallback</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-        <span class="c1"># A relatively stable internal ID used by Viz to track this specific</span>
-        <span class="c1"># observable instance across updates. Based on the memory ID of the wrapper.</span>
+        <span class="c1"># A relatively stable internal ID string based on the memory address of this</span>
+        <span class="c1"># ObservableValue wrapper instance. Used by Viz to track this specific</span>
+        <span class="c1"># observable across updates, helping maintain UI state (like expanded nodes).</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_obs_value_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;obs_</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
 
 
-    <span class="c1"># --- Subscription Management (Mostly internal use by Viz) ---</span>
+    <span class="c1"># --- Subscription Management (Primarily for internal use by Viz) ---</span>
 
 <div class="viewcode-block" id="ObservableValue.subscribe">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.subscribe">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">SubscriptionCallback</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UnsubscribeFunction</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a function to be called whenever the wrapped value changes.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a function to be called whenever the wrapped value changes. (Internal).</span>
 
-<span class="sd">        This is primarily used internally by the `sidekick.Viz` module to listen</span>
-<span class="sd">        for changes. You typically don&#39;t need to call this directly yourself.</span>
+<span class="sd">        This method is primarily intended for internal use by the `sidekick.Viz`</span>
+<span class="sd">        module. When `viz.show()` is called with an `ObservableValue`, Viz uses</span>
+<span class="sd">        this method to register its own internal handler (`_handle_observable_update`).</span>
 
-<span class="sd">        When a change occurs (e.g., via `append()`, `__setitem__()`), the</span>
-<span class="sd">        `callback` function provided here will be executed with a dictionary</span>
-<span class="sd">        containing details about that specific change.</span>
+<span class="sd">        When a change occurs to the wrapped value (triggered by methods like</span>
+<span class="sd">        `append()`, `__setitem__()`, `set()`, etc.), the `callback` function</span>
+<span class="sd">        provided here is executed with a dictionary containing details about</span>
+<span class="sd">        that specific change (e.g., type of change, path, new value).</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            callback: A function that accepts one argument: a dictionary</span>
-<span class="sd">                describing the change event (keys like &#39;type&#39;, &#39;path&#39;, &#39;value&#39;).</span>
+<span class="sd">                describing the change event (common keys include &#39;type&#39;, &#39;path&#39;,</span>
+<span class="sd">                &#39;value&#39;, &#39;key&#39;, &#39;old_value&#39;, &#39;length&#39;).</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            A function that, when called with no arguments, will remove this</span>
-<span class="sd">            specific `callback` from the subscription list. This allows `Viz`</span>
-<span class="sd">            to clean up its listeners when a variable is removed or replaced.</span>
+<span class="sd">            UnsubscribeFunction: A function that, when called with no arguments,</span>
+<span class="sd">                will remove this specific `callback` from the subscription list.</span>
+<span class="sd">                This allows `Viz` to clean up its listener when the variable is</span>
+<span class="sd">                removed from the display or the Viz panel itself is removed.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            TypeError: If the provided `callback` is not a callable function.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">callback</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Callback provided to ObservableValue.subscribe must be callable&quot;</span><span class="p">)</span>
-        <span class="c1"># Add the callback function to the set of subscribers.</span>
+        <span class="c1"># Add the provided callback function to the set of active subscribers.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_subscribers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">callback</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Subscribed callback </span><span class="si">{</span><span class="n">callback</span><span class="si">}</span><span class="s2"> to ObservableValue (id: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_obs_value_id</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Create and return a specific function to unsubscribe *this* callback.</span>
+        <span class="c1"># Create and return a dedicated function to unsubscribe this specific callback.</span>
+        <span class="c1"># This avoids potential issues with removing the wrong callback if multiple</span>
+        <span class="c1"># subscribers exist.</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">unsubscribe</span><span class="p">():</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">unsubscribe</span><span class="p">(</span><span class="n">callback</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">unsubscribe</span></div>
@@ -215,79 +237,97 @@
 <div class="viewcode-block" id="ObservableValue.unsubscribe">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.unsubscribe">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">unsubscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">SubscriptionCallback</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes a previously registered callback function. (Internal use).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes a previously registered callback function. (Internal).</span>
 
-<span class="sd">        Called by the `unsubscribe` function returned from `subscribe`, or</span>
-<span class="sd">        directly by `Viz` during cleanup in some cases.</span>
+<span class="sd">        Typically called by the `unsubscribe` function returned from `subscribe`,</span>
+<span class="sd">        or potentially directly by `Viz` during cleanup.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            callback: The specific callback function to remove.</span>
+<span class="sd">            callback: The specific callback function instance to remove from the</span>
+<span class="sd">                      set of subscribers.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Safely remove the callback if it&#39;s present. `discard` doesn&#39;t</span>
-        <span class="c1"># raise an error if the callback is already gone.</span>
+        <span class="c1"># Use set.discard() which safely removes the callback if it&#39;s present,</span>
+        <span class="c1"># but does nothing (without error) if it was already removed.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_subscribers</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">callback</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsubscribed callback </span><span class="si">{</span><span class="n">callback</span><span class="si">}</span><span class="s2"> from ObservableValue (id: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_obs_value_id</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_notify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change_details</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal method to inform all subscribers about a change.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal method to inform all registered subscribers about a change. (Internal).</span>
 
-<span class="sd">        This method is called by the intercepted methods (like `append`, `set`, etc.)</span>
-<span class="sd">        after a modification has been made to the wrapped value. It iterates</span>
-<span class="sd">        through all registered `_subscribers` and calls each one with the</span>
-<span class="sd">        `change_details`.</span>
+<span class="sd">        This method is called internally by the ObservableValue&#39;s intercepted</span>
+<span class="sd">        methods (like `append`, `set`, `__setitem__`) *after* a modification</span>
+<span class="sd">        has been successfully made to the wrapped `_value`.</span>
+
+<span class="sd">        It iterates through all currently registered subscriber callbacks and calls</span>
+<span class="sd">        each one, passing the `change_details` dictionary.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            change_details (Dict[str, Any]): A dictionary containing information</span>
-<span class="sd">                about the change that occurred (e.g., &#39;type&#39;, &#39;path&#39;, &#39;value&#39;, &#39;key&#39;).</span>
-<span class="sd">                This dictionary is passed directly to the subscriber callbacks.</span>
+<span class="sd">                about the change that occurred. Standard keys include &#39;type&#39; (e.g.,</span>
+<span class="sd">                &quot;setitem&quot;, &quot;append&quot;), &#39;path&#39; (list indices/dict keys), &#39;value&#39; (new</span>
+<span class="sd">                value involved), &#39;key&#39; (for dict changes), &#39;old_value&#39; (value replaced</span>
+<span class="sd">                or removed), and &#39;length&#39; (new container length).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># If no one is listening, don&#39;t bother doing anything.</span>
+        <span class="c1"># Optimization: If no subscribers are registered, do nothing.</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subscribers</span><span class="p">:</span>
             <span class="k">return</span>
 
-        <span class="c1"># Ensure common keys exist in the details for consistent structure,</span>
-        <span class="c1"># even if their value is None for a particular change type.</span>
-        <span class="n">change_details</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">,</span> <span class="p">[])</span>
-        <span class="n">change_details</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="c1"># New value involved</span>
-        <span class="n">change_details</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;key&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>   <span class="c1"># Key involved (for dicts)</span>
-        <span class="n">change_details</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;old_value&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="c1"># Old value (if replaced/removed)</span>
-        <span class="n">change_details</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;length&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>    <span class="c1"># New length (for collections)</span>
+        <span class="c1"># Ensure common keys exist in the details dictionary for a consistent structure,</span>
+        <span class="c1"># even if their value is None for a particular change type. Helps subscribers.</span>
+        <span class="n">change_details</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">,</span> <span class="p">[])</span> <span class="c1"># Path from root to change location</span>
+        <span class="n">change_details</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="c1"># New value involved (if any)</span>
+        <span class="n">change_details</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;key&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>   <span class="c1"># Key involved (for dicts, if any)</span>
+        <span class="n">change_details</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;old_value&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="c1"># Old value replaced/removed (if any)</span>
+        <span class="n">change_details</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;length&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>    <span class="c1"># New length of container (if applicable)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Notifying </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_subscribers</span><span class="p">)</span><span class="si">}</span><span class="s2"> subscribers for ObservableValue (id: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_obs_value_id</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">change_details</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Copy the set of subscribers before iterating. This prevents issues if a</span>
-        <span class="c1"># callback function itself tries to subscribe or unsubscribe during notification.</span>
+        <span class="c1"># Iterate over a *copy* of the subscribers set. This prevents modification</span>
+        <span class="c1"># issues if a subscriber callback itself tries to subscribe or unsubscribe</span>
+        <span class="c1"># during the notification process.</span>
         <span class="n">subscribers_to_notify</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_subscribers</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="n">subscribers_to_notify</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="c1"># Call the subscriber function with the change details.</span>
+                <span class="c1"># Call the subscriber function, passing the details of the change.</span>
                 <span class="n">callback</span><span class="p">(</span><span class="n">change_details</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="c1"># Log errors in subscriber callbacks but continue notifying others.</span>
-                <span class="c1"># Avoids one faulty subscriber breaking updates for others.</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error in ObservableValue subscriber </span><span class="si">{</span><span class="n">callback</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="c1"># Log errors within subscriber callbacks but continue notifying others.</span>
+                <span class="c1"># Prevents one faulty subscriber (e.g., in Viz) from breaking updates</span>
+                <span class="c1"># for potential future subscribers.</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error occurred inside ObservableValue subscriber callback </span><span class="si">{</span><span class="n">callback</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1"># --- Accessing and Replacing the Wrapped Value ---</span>
 
 <div class="viewcode-block" id="ObservableValue.get">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.get">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the current underlying Python value being wrapped.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the actual underlying Python value being wrapped by this ObservableValue.</span>
 
-<span class="sd">        Use this if you need direct access to the original list, dict, set, etc.,</span>
-<span class="sd">        without the ObservableValue wrapper.</span>
+<span class="sd">        Use this method when you need direct access to the original list, dictionary,</span>
+<span class="sd">        set, or other object stored inside, without the ObservableValue wrapper&#39;s</span>
+<span class="sd">        notification logic.</span>
+
+<span class="sd">        Be cautious: Modifying mutable objects obtained via `get()` directly (e.g.,</span>
+<span class="sd">        `my_obs_list.get().append(item)`) will **not** trigger automatic notifications</span>
+<span class="sd">        to subscribers like `sidekick.Viz`. For automatic updates, always modify</span>
+<span class="sd">        through the `ObservableValue` wrapper itself (`my_obs_list.append(item)`).</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            The actual Python object stored inside the wrapper.</span>
+<span class="sd">            The actual Python object currently stored within the wrapper.</span>
 
-<span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; obs_list = sidekick.ObservableValue([10, 20])</span>
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; obs_list = sidekick.ObservableValue([10, 20, 30])</span>
 <span class="sd">            &gt;&gt;&gt; raw_list = obs_list.get()</span>
 <span class="sd">            &gt;&gt;&gt; print(raw_list)</span>
-<span class="sd">            [10, 20]</span>
-<span class="sd">            &gt;&gt;&gt; print(isinstance(raw_list, list))</span>
-<span class="sd">            True</span>
+<span class="sd">            [10, 20, 30]</span>
+<span class="sd">            &gt;&gt;&gt; print(type(raw_list))</span>
+<span class="sd">            &lt;class &#39;list&#39;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # Modifying raw_list directly does NOT notify Viz</span>
+<span class="sd">            &gt;&gt;&gt; raw_list.pop()</span>
+<span class="sd">            30</span>
+<span class="sd">            &gt;&gt;&gt; # Modifying through the wrapper DOES notify Viz</span>
+<span class="sd">            &gt;&gt;&gt; obs_list.pop() # Viz will update</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span></div>
 
@@ -295,52 +335,57 @@
 <div class="viewcode-block" id="ObservableValue.set">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.set">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Replaces the entire wrapped value with a completely new value.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Replaces the currently wrapped value with a completely new value.</span>
 
-<span class="sd">        This is used when you want to assign a totally different object (like a</span>
-<span class="sd">        new list or dictionary) to this observable variable, rather than just</span>
-<span class="sd">        modifying the existing one.</span>
+<span class="sd">        This method is used when you want to assign a fundamentally different</span>
+<span class="sd">        object (e.g., a new list, a different dictionary, a number instead of a</span>
+<span class="sd">        list) to this observable variable, rather than just modifying the contents</span>
+<span class="sd">        of the existing wrapped object.</span>
 
-<span class="sd">        It triggers a &quot;set&quot; notification to subscribers, indicating that the</span>
+<span class="sd">        It triggers a &quot;set&quot; notification to all subscribers, indicating that the</span>
 <span class="sd">        entire value has been replaced.</span>
 
 <span class="sd">        Note:</span>
 <span class="sd">            If the `new_value` you provide is the *exact same object* in memory</span>
-<span class="sd">            as the currently wrapped value (`new_value is self._value`), no</span>
-<span class="sd">            notification will be sent, as the value hasn&#39;t actually changed.</span>
+<span class="sd">            as the currently wrapped value (i.e., `new_value is self.get()`),</span>
+<span class="sd">            this method will do nothing and send no notification, as the value</span>
+<span class="sd">            hasn&#39;t conceptually changed from the wrapper&#39;s perspective.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            new_value: The new Python object to wrap and observe.</span>
+<span class="sd">            new_value: The new Python object to wrap and observe going forward.</span>
 
-<span class="sd">        Returns:</span>
-<span class="sd">            None</span>
-
-<span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; obs_data = sidekick.ObservableValue({&quot;a&quot;: 1})</span>
-<span class="sd">            &gt;&gt;&gt; viz.show(&quot;data&quot;, obs_data)</span>
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; obs_data = sidekick.ObservableValue({&quot;status&quot;: &quot;pending&quot;})</span>
+<span class="sd">            &gt;&gt;&gt; viz.show(&quot;Job Status&quot;, obs_data) # Show initial state</span>
 <span class="sd">            &gt;&gt;&gt;</span>
-<span class="sd">            &gt;&gt;&gt; # Replace the whole dictionary</span>
-<span class="sd">            &gt;&gt;&gt; new_dict = {&quot;b&quot;: 2, &quot;c&quot;: 3}</span>
-<span class="sd">            &gt;&gt;&gt; obs_data.set(new_dict) # Viz panel updates to show the new dictionary</span>
+<span class="sd">            &gt;&gt;&gt; # Replace the entire dictionary</span>
+<span class="sd">            &gt;&gt;&gt; final_status = {&quot;status&quot;: &quot;complete&quot;, &quot;result&quot;: 123}</span>
+<span class="sd">            &gt;&gt;&gt; obs_data.set(final_status) # Viz panel updates to show the new dict</span>
 <span class="sd">            &gt;&gt;&gt;</span>
-<span class="sd">            &gt;&gt;&gt; # Subsequent changes to new_dict through obs_data will notify</span>
-<span class="sd">            &gt;&gt;&gt; obs_data[&#39;d&#39;] = 4</span>
+<span class="sd">            &gt;&gt;&gt; # Further modifications through obs_data now affect final_status</span>
+<span class="sd">            &gt;&gt;&gt; obs_data[&quot;timestamp&quot;] = time.time() # Viz updates again</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Only notify if the new value is actually different from the old one.</span>
+        <span class="c1"># Optimization: Only update and notify if the new value is actually</span>
+        <span class="c1"># a different object from the one currently stored. Checking identity `is`</span>
+        <span class="c1"># is important here, not just equality `==`.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">new_value</span><span class="p">:</span>
-            <span class="n">old_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="c1"># Keep track of the old value for the notification</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">new_value</span> <span class="c1"># Update the internal reference</span>
+            <span class="n">old_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="c1"># Keep a reference to the old value for the notification.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">new_value</span> <span class="c1"># Update the internal reference to the new value.</span>
+            <span class="c1"># Send a notification indicating a &#39;set&#39; operation at the root path.</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">({</span>
                 <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;set&quot;</span><span class="p">,</span>        <span class="c1"># Type of change: wholesale replacement</span>
-                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[],</span>           <span class="c1"># Change affects the root value (empty path)</span>
+                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[],</span>           <span class="c1"># Path is empty, indicating the root value changed</span>
                 <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="c1"># The new value now being wrapped</span>
                 <span class="s2">&quot;old_value&quot;</span><span class="p">:</span> <span class="n">old_value</span> <span class="c1"># The value that was just replaced</span>
+                <span class="c1"># Length is typically handled by the Viz module during &#39;set&#39; based on new value.</span>
             <span class="p">})</span></div>
 
 
     <span class="c1"># --- Intercepted Methods for Mutable Containers ---</span>
-    <span class="c1"># These methods mimic the standard list/dict/set methods but add a call</span>
-    <span class="c1"># to self._notify() after performing the operation.</span>
+    <span class="c1"># These methods override standard Python operations for lists, dicts, and sets.</span>
+    <span class="c1"># They first perform the operation on the wrapped self._value, and then,</span>
+    <span class="c1"># if the operation was successful and potentially changed the value,</span>
+    <span class="c1"># they call self._notify() to inform subscribers.</span>
 
     <span class="c1"># --- List/Sequence Methods ---</span>
 
@@ -349,121 +394,210 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Appends an item to the end of the wrapped list/sequence and notifies subscribers.</span>
 
-<span class="sd">        Requires the wrapped value to be a mutable sequence (like a `list`).</span>
+<span class="sd">        This method mimics the behavior of `list.append()`. It requires the</span>
+<span class="sd">        wrapped value (`self.get()`) to be a mutable sequence (like a standard</span>
+<span class="sd">        Python `list`).</span>
 
 <span class="sd">        Raises:</span>
-<span class="sd">            TypeError: If the wrapped value is not a list or similar mutable sequence.</span>
+<span class="sd">            AttributeError: If the wrapped value does not have an `append` method.</span>
+<span class="sd">            TypeError: If the wrapped value is not a list or similar mutable sequence</span>
+<span class="sd">                       (though usually caught by AttributeError first).</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; items = sidekick.ObservableValue([&#39;a&#39;, &#39;b&#39;])</span>
+<span class="sd">            &gt;&gt;&gt; viz.show(&quot;Items&quot;, items)</span>
+<span class="sd">            &gt;&gt;&gt; items.append(&#39;c&#39;) # Viz automatically updates to show [&#39;a&#39;, &#39;b&#39;, &#39;c&#39;]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if the wrapped object supports append (duck typing).</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableSequence</span><span class="p">):</span>
+            <span class="c1"># Provide a more specific error message.</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: append() requires the wrapped value to be a mutable sequence (e.g., list).&quot;</span><span class="p">)</span>
-        <span class="c1"># Get the index where the item will be added (current length)</span>
+
+        <span class="c1"># Record current length to determine the index of the appended item.</span>
         <span class="n">current_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>
         <span class="c1"># Perform the actual append operation on the wrapped list.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-        <span class="c1"># Notify subscribers about the change.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="c1"># type: ignore # Assume append exists if MutableSequence passed</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Wrapped object of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> has no &#39;append&#39; method.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Notify subscribers about the successful append operation.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">({</span>
             <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;append&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">current_len</span><span class="p">],</span>      <span class="c1"># Path is the index of the new item</span>
-            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">item</span><span class="p">,</span>              <span class="c1"># The item that was added</span>
-            <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>  <span class="c1"># The new length of the list</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">current_len</span><span class="p">],</span>      <span class="c1"># Path identifies the index of the newly added item</span>
+            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">item</span><span class="p">,</span>              <span class="c1"># The item that was actually added</span>
+            <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>  <span class="c1"># The new total length of the list</span>
         <span class="p">})</span></div>
 
 
 <div class="viewcode-block" id="ObservableValue.insert">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.insert">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Inserts an item at a specific index in the wrapped list/sequence and notifies.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Inserts an item at a specific index in the wrapped list/sequence and notifies subscribers.</span>
+
+<span class="sd">        Mimics `list.insert()`. Requires the wrapped value to be a mutable sequence.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            index (int): The index at which to insert the `item`.</span>
+<span class="sd">            item (Any): The item to insert.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: If the wrapped value does not have an `insert` method.</span>
+<span class="sd">            TypeError: If the wrapped value is not a list or similar.</span>
+<span class="sd">            IndexError: If the index is out of range for insertion (behavior matches list.insert).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableSequence</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: insert() requires a mutable sequence.&quot;</span><span class="p">)</span>
-        <span class="c1"># Perform the actual insert.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
-        <span class="c1"># Notify subscribers.</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: insert() requires the wrapped value to be a mutable sequence.&quot;</span><span class="p">)</span>
+        <span class="c1"># Perform the actual insert operation on the wrapped list.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span> <span class="c1"># type: ignore # Assume insert exists</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Wrapped object of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> has no &#39;insert&#39; method.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Notify subscribers about the successful insertion.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">({</span>
             <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;insert&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span>            <span class="c1"># Path is the index where inserted</span>
-            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">item</span><span class="p">,</span>              <span class="c1"># The item inserted</span>
-            <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>   <span class="c1"># The new length</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span>            <span class="c1"># Path identifies the index where insertion occurred</span>
+            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">item</span><span class="p">,</span>              <span class="c1"># The item that was inserted</span>
+            <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>  <span class="c1"># The new total length of the list</span>
         <span class="p">})</span></div>
 
 
 <div class="viewcode-block" id="ObservableValue.pop">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.pop">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes and returns the item at the given index (default last) and notifies.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableSequence</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: pop() requires a mutable sequence.&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes and returns the item at the given index (default last) and notifies subscribers.</span>
 
-        <span class="c1"># Calculate the actual index being popped (handling negative indices)</span>
-        <span class="c1"># to report it correctly before the list shrinks.</span>
+<span class="sd">        Mimics `list.pop()`. Requires the wrapped value to be a mutable sequence.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            index (int): The index of the item to remove. Defaults to -1 (the last item).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The item that was removed from the list.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: If the wrapped value does not have a `pop` method.</span>
+<span class="sd">            TypeError: If the wrapped value is not a list or similar.</span>
+<span class="sd">            IndexError: If the list is empty or the index is out of range.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableSequence</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: pop() requires the wrapped value to be a mutable sequence.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Determine the actual index being popped *before* mutation for accurate reporting.</span>
+        <span class="c1"># Handles negative indices correctly. Raises IndexError if invalid.</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">list_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">list_len</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;pop from empty list&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">list_len</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;pop from empty list&quot;</span><span class="p">)</span> <span class="c1"># Match list behavior</span>
             <span class="n">actual_index</span> <span class="o">=</span> <span class="n">index</span> <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">list_len</span> <span class="o">+</span> <span class="n">index</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">actual_index</span> <span class="o">&lt;</span> <span class="n">list_len</span><span class="p">):</span> <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;pop index out of range&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">actual_index</span> <span class="o">&lt;</span> <span class="n">list_len</span><span class="p">):</span> <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;pop index out of range&quot;</span><span class="p">)</span> <span class="c1"># Match list behavior</span>
         <span class="k">except</span> <span class="ne">IndexError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Error calculating pop index: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="c1"># Re-raise the original error</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Error calculating pop index (index=</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">, len=</span><span class="si">{</span><span class="n">list_len</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="c1"># Re-raise the standard Python error</span>
 
-        <span class="c1"># Perform the actual pop, getting the removed value.</span>
-        <span class="n">popped_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
-        <span class="c1"># Notify subscribers.</span>
+        <span class="c1"># Perform the actual pop operation on the wrapped list.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">popped_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="c1"># type: ignore # Assume pop exists</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Wrapped object of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> has no &#39;pop&#39; method.&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IndexError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># This might happen in race conditions, though unlikely for typical Sidekick usage.</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: IndexError during pop itself (index=</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+
+        <span class="c1"># Notify subscribers about the successful pop operation.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">({</span>
             <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;pop&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">actual_index</span><span class="p">],</span>   <span class="c1"># Index from where item was removed</span>
-            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>            <span class="c1"># No *new* value associated with pop</span>
-            <span class="s2">&quot;old_value&quot;</span><span class="p">:</span> <span class="n">popped_value</span><span class="p">,</span> <span class="c1"># The value that was removed</span>
-            <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span> <span class="c1"># The new length</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">actual_index</span><span class="p">],</span>     <span class="c1"># Path identifies the index from which the item was removed</span>
+            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>              <span class="c1"># No *new* value is associated with a pop</span>
+            <span class="s2">&quot;old_value&quot;</span><span class="p">:</span> <span class="n">popped_value</span><span class="p">,</span>  <span class="c1"># The value that was actually removed</span>
+            <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>  <span class="c1"># The new total length of the list</span>
         <span class="p">})</span>
-        <span class="k">return</span> <span class="n">popped_value</span> <span class="c1"># Return the popped value like standard pop()</span></div>
+        <span class="c1"># Return the removed value, just like standard list.pop().</span>
+        <span class="k">return</span> <span class="n">popped_value</span></div>
 
 
 <div class="viewcode-block" id="ObservableValue.remove">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.remove">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">         </span><span class="sd">&quot;&quot;&quot;Removes the first occurrence of a given value from the list/sequence and notifies.&quot;&quot;&quot;</span>
+<span class="w">         </span><span class="sd">&quot;&quot;&quot;Removes the first occurrence of a given value from the wrapped list/sequence and notifies subscribers.</span>
+
+<span class="sd">         Mimics `list.remove()`. Requires the wrapped value to be a mutable sequence.</span>
+<span class="sd">         If the value is not found, it does nothing (and sends no notification), matching</span>
+<span class="sd">         the standard `list.remove()` behavior.</span>
+
+<span class="sd">         Args:</span>
+<span class="sd">             value (Any): The value to search for and remove the first instance of.</span>
+
+<span class="sd">         Raises:</span>
+<span class="sd">            AttributeError: If the wrapped value does not have a `remove` method.</span>
+<span class="sd">            TypeError: If the wrapped value is not a list or similar.</span>
+<span class="sd">            ValueError: While this method catches the `ValueError` from `list.remove`</span>
+<span class="sd">                        (when the value isn&#39;t found) and does nothing, the underlying</span>
+<span class="sd">                        `list.index` call used for notification *could* raise it if the</span>
+<span class="sd">                        value disappears between the check and the call (highly unlikely).</span>
+<span class="sd">         &quot;&quot;&quot;</span>
          <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableSequence</span><span class="p">):</span>
-             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: remove() requires a mutable sequence.&quot;</span><span class="p">)</span>
+             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: remove() requires the wrapped value to be a mutable sequence.&quot;</span><span class="p">)</span>
+
          <span class="k">try</span><span class="p">:</span>
-             <span class="c1"># Find the index *before* removing, so we can report it.</span>
-             <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-             <span class="c1"># Perform the actual removal.</span>
-             <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-             <span class="c1"># Notify subscribers.</span>
+             <span class="c1"># Find the index *before* removing, so we can report the path accurately.</span>
+             <span class="c1"># This will raise ValueError if &#39;value&#39; is not in the list.</span>
+             <span class="n">index_to_remove</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="c1"># type: ignore # Assume index exists</span>
+
+             <span class="c1"># Perform the actual removal operation on the wrapped list.</span>
+             <span class="c1"># This might also raise ValueError, but we check first with index().</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="c1"># type: ignore # Assume remove exists</span>
+
+             <span class="c1"># If remove succeeded (i.e., index() didn&#39;t raise ValueError), notify.</span>
              <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">({</span>
-                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;remove&quot;</span><span class="p">,</span> <span class="c1"># Specific type for removing by value</span>
-                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span>       <span class="c1"># Index where the value was found</span>
-                <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>         <span class="c1"># No new value</span>
-                <span class="s2">&quot;old_value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>    <span class="c1"># The value that was removed</span>
-                <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span> <span class="c1"># The new length</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;remove&quot;</span><span class="p">,</span> <span class="c1"># Specific type for removing by value rather than index</span>
+                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">index_to_remove</span><span class="p">],</span> <span class="c1"># Path is the index where the value was found</span>
+                <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>             <span class="c1"># No *new* value associated with removal</span>
+                <span class="s2">&quot;old_value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>        <span class="c1"># The value that was actually removed</span>
+                <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span> <span class="c1"># The new total length of the list</span>
              <span class="p">})</span>
          <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-            <span class="c1"># Value wasn&#39;t found - standard list behavior is to do nothing.</span>
-            <span class="c1"># So, we also do nothing and send no notification.</span>
-            <span class="k">pass</span></div>
+            <span class="c1"># Standard list.remove() behavior: if the value isn&#39;t found, do nothing.</span>
+            <span class="c1"># So, we catch the ValueError from index() and do not notify.</span>
+            <span class="k">pass</span>
+         <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+             <span class="c1"># Handle cases where wrapped object lacks index() or remove().</span>
+             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Wrapped object of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> has no &#39;remove&#39; or &#39;index&#39; method.&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ObservableValue.clear">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.clear">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes all items from the wrapped container (list, dict, set) and notifies.&quot;&quot;&quot;</span>
-        <span class="c1"># Check if the wrapped value actually *has* a &#39;clear&#39; method.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes all items from the wrapped container (list, dict, set) and notifies subscribers.</span>
+
+<span class="sd">        Requires the wrapped value to have a callable `clear()` method.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: If the wrapped object does not have a `clear` method.</span>
+<span class="sd">            TypeError: If the wrapped object&#39;s `clear` attribute is not callable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if the wrapped value actually *has* a &#39;clear&#39; method using getattr.</span>
         <span class="n">clear_method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="s1">&#39;clear&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">clear_method</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Wrapped object of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> has no clear() method.&quot;</span><span class="p">)</span>
+            <span class="c1"># Raise error if no clear method exists or it&#39;s not callable.</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Wrapped object of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> has no callable &#39;clear&#39; method.&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Get old length (if possible) before clearing</span>
+        <span class="c1"># Store old length *before* clearing for potential use in notification (though not strictly required by Viz currently).</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">old_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="s1">&#39;__len__&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
-            <span class="n">old_len</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">old_len</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># Handle cases like custom objects without len()</span>
 
         <span class="c1"># Call the wrapped object&#39;s actual clear method.</span>
         <span class="n">clear_method</span><span class="p">()</span>
+
         <span class="c1"># Notify subscribers that the container was cleared.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">({</span>
             <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;clear&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[],</span>              <span class="c1"># Clearing affects the root container</span>
-            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span>    <span class="c1"># Send the now-empty container state</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[],</span>              <span class="c1"># Path is empty, indicates the root container was cleared</span>
+            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span>    <span class="c1"># Include the (now empty) container state in the notification</span>
             <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>             <span class="c1"># New length is always 0 after clear</span>
             <span class="c1"># Optionally include old_length if needed by UI: &quot;old_length&quot;: old_len</span>
         <span class="p">})</span></div>
@@ -474,133 +608,220 @@
 <div class="viewcode-block" id="ObservableValue.__setitem__">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.__setitem__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the value for a key in the wrapped container (dict/list) and notifies.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the value for a key/index in the wrapped container (dict/list) and notifies subscribers.</span>
 
-<span class="sd">        This method intercepts the standard Python square bracket assignment:</span>
+<span class="sd">        This method intercepts the standard Python square bracket assignment syntax:</span>
 <span class="sd">        `my_observable[key] = value`</span>
 
-<span class="sd">        It performs the assignment on the wrapped object and then triggers a</span>
-<span class="sd">        &quot;setitem&quot; notification. Works for both dictionary key assignment and</span>
-<span class="sd">        list index assignment.</span>
+<span class="sd">        It performs the assignment operation on the wrapped object (`self._value`)</span>
+<span class="sd">        and then, if successful, triggers a &quot;setitem&quot; notification to inform</span>
+<span class="sd">        subscribers (like Viz) about the change. This works for both dictionary</span>
+<span class="sd">        key assignment (`my_dict[key] = val`) and list index assignment</span>
+<span class="sd">        (`my_list[index] = val`).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (Any): The key (for dictionaries) or index (for lists) to assign to.</span>
+<span class="sd">            value (Any): The new value to associate with the key/index.</span>
 
 <span class="sd">        Raises:</span>
-<span class="sd">            TypeError: If the wrapped value doesn&#39;t support item assignment (e.g., a set).</span>
+<span class="sd">            TypeError: If the wrapped value does not support item assignment (e.g.,</span>
+<span class="sd">                       if it&#39;s a set, tuple, or immutable object).</span>
+<span class="sd">            IndexError: If the wrapped value is a list and the index is out of range.</span>
+<span class="sd">            KeyError: Typically not raised by assignment itself, but underlying checks might.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Check if the wrapped object supports item assignment.</span>
+        <span class="c1"># Check if the wrapped object supports item assignment (MutableSequence or MutableMapping).</span>
+        <span class="c1"># Using abstract base classes makes this check more robust for custom collections.</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="p">(</span><span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableSequence</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableMapping</span><span class="p">)):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: __setitem__ ([key] = value) requires the wrapped value to be a mutable sequence or mapping.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Wrapped object of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> does not support item assignment using []=.&quot;</span><span class="p">)</span>
 
         <span class="n">old_value</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">is_mapping</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableMapping</span><span class="p">)</span>
         <span class="n">is_sequence</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableSequence</span><span class="p">)</span>
 
-        <span class="c1"># Try to get the old value *before* overwriting it, for the notification.</span>
+        <span class="c1"># Attempt to retrieve the *old* value associated with the key/index *before*</span>
+        <span class="c1"># overwriting it. This is useful for notifications (e.g., Viz highlighting).</span>
+        <span class="c1"># We wrap this in a try/except because the key/index might not exist yet.</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">is_mapping</span><span class="p">:</span> <span class="n">old_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">is_sequence</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">key</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">):</span>
-                 <span class="n">old_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="c1"># type: ignore</span>
+            <span class="k">if</span> <span class="n">is_mapping</span><span class="p">:</span>
+                <span class="c1"># For dicts, use get() which returns None if key doesn&#39;t exist.</span>
+                <span class="n">old_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">is_sequence</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="c1"># For lists, check index validity before accessing to avoid IndexError here.</span>
+                <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">key</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">):</span>
+                     <span class="n">old_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="c1"># Access only if index is valid</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-            <span class="c1"># Ignore errors getting old value (e.g., key doesn&#39;t exist yet, index out of bounds)</span>
+            <span class="c1"># Ignore potential errors retrieving the old value (e.g., key not found, index error).</span>
+            <span class="c1"># old_value will remain None, which is acceptable.</span>
             <span class="k">pass</span>
 
-        <span class="c1"># Perform the actual assignment on the wrapped object.</span>
+        <span class="c1"># Perform the actual assignment operation on the wrapped object.</span>
+        <span class="c1"># This is the core action that modifies the user&#39;s data.</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span> <span class="c1"># type: ignore</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span> <span class="c1"># type: ignore # Assume __setitem__ exists if type checks passed</span>
         <span class="k">except</span> <span class="ne">IndexError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="c1"># Re-raise index errors for lists to match standard behavior</span>
+            <span class="c1"># If it&#39;s a sequence and assignment fails due to index, re-raise standard error.</span>
             <span class="k">if</span> <span class="n">is_sequence</span><span class="p">:</span> <span class="k">raise</span> <span class="n">e</span>
-            <span class="c1"># For mappings, this shouldn&#39;t happen unless __setitem__ is weird.</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Unexpected error during __setitem__ for key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="c1"># Avoid notifying if the set failed</span>
-            <span class="k">return</span>
+            <span class="c1"># Should not happen for mappings normally, but log if it does.</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Unexpected error during dict __setitem__ for key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="c1"># Avoid notifying if the assignment failed</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Catch any other unexpected errors during assignment.</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Unexpected error during __setitem__ for key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-             <span class="c1"># Avoid notifying if the set failed</span>
-            <span class="k">return</span>
+            <span class="k">return</span> <span class="c1"># Avoid notifying if the assignment failed</span>
 
-
-        <span class="c1"># Notify subscribers about the successful assignment.</span>
+        <span class="c1"># If assignment succeeded, notify subscribers about the change.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">({</span>
             <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;setitem&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">key</span><span class="p">],</span>              <span class="c1"># Path is the key or index used</span>
-            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>             <span class="c1"># The new value that was set</span>
-            <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="n">key</span> <span class="k">if</span> <span class="n">is_mapping</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="c1"># Include key *only* for dicts/mappings</span>
-            <span class="s2">&quot;old_value&quot;</span><span class="p">:</span> <span class="n">old_value</span>      <span class="c1"># The value that was replaced (or None if new)</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">key</span><span class="p">],</span>              <span class="c1"># Path is the key or index that was assigned to</span>
+            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>             <span class="c1"># The new value that was assigned</span>
+            <span class="c1"># Include &#39;key&#39; only for dictionary/mapping types for clarity in Viz.</span>
+            <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="n">key</span> <span class="k">if</span> <span class="n">is_mapping</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;old_value&quot;</span><span class="p">:</span> <span class="n">old_value</span>      <span class="c1"># The value that was replaced (or None if it was a new key/index)</span>
+            <span class="c1"># Length is usually not changed by setitem unless list grows (not standard)</span>
         <span class="p">})</span></div>
 
 
 <div class="viewcode-block" id="ObservableValue.__delitem__">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.__delitem__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deletes an item/key from the wrapped container (dict/list) and notifies.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deletes an item/key from the wrapped container (dict/list) and notifies subscribers.</span>
 
-<span class="sd">        Intercepts the standard Python `del` statement:</span>
+<span class="sd">        Intercepts the standard Python `del` statement used with square brackets:</span>
 <span class="sd">        `del my_observable[key]`</span>
 
-<span class="sd">        Performs the deletion and then triggers a &quot;delitem&quot; notification.</span>
+<span class="sd">        It performs the deletion operation on the wrapped object (`self._value`)</span>
+<span class="sd">        and then, if successful, triggers a &quot;delitem&quot; notification. Works for</span>
+<span class="sd">        deleting dictionary keys or list items by index.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (Any): The key (for dictionaries) or index (for lists) to delete.</span>
 
 <span class="sd">        Raises:</span>
-<span class="sd">            TypeError: If the wrapped value doesn&#39;t support item deletion.</span>
-<span class="sd">            KeyError/IndexError: If the key/index doesn&#39;t exist (standard behavior).</span>
+<span class="sd">            TypeError: If the wrapped value does not support item deletion.</span>
+<span class="sd">            KeyError: If the wrapped value is a dictionary and the key is not found.</span>
+<span class="sd">            IndexError: If the wrapped value is a list and the index is out of range.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="p">(</span><span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableSequence</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableMapping</span><span class="p">)):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: __delitem__ (del obj[key]) requires a mutable sequence or mapping.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Wrapped object of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> does not support item deletion using del [].&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Get the value *before* deleting it, to include in the notification.</span>
-        <span class="c1"># This will raise KeyError/IndexError if the key/index doesn&#39;t exist,</span>
-        <span class="c1"># which is the standard behavior of `del`, so we let it propagate.</span>
-        <span class="n">old_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="c1"># type: ignore</span>
         <span class="n">is_mapping</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableMapping</span><span class="p">)</span>
-        <span class="n">old_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="s1">&#39;__len__&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">old_len</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">old_value</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># Perform the actual deletion on the wrapped object.</span>
-        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="c1"># type: ignore</span>
+        <span class="c1"># Attempt to get the value *before* deleting it for the notification.</span>
+        <span class="c1"># This will naturally raise KeyError/IndexError if the key/index doesn&#39;t exist,</span>
+        <span class="c1"># matching the standard behavior of `del`, so we allow it to propagate upwards.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">old_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="c1"># type: ignore # Assume __getitem__ exists</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="s1">&#39;__len__&#39;</span><span class="p">):</span> <span class="n">old_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+             <span class="k">raise</span> <span class="n">e</span> <span class="c1"># Let standard errors propagate if item doesn&#39;t exist</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e_get</span><span class="p">:</span>
+             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Unexpected error getting item &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; before deletion: </span><span class="si">{</span><span class="n">e_get</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+             <span class="k">raise</span> <span class="n">e_get</span> <span class="c1"># Propagate unexpected errors</span>
 
-        <span class="c1"># Notify subscribers about the successful deletion.</span>
+
+        <span class="c1"># Perform the actual deletion operation on the wrapped object.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="c1"># type: ignore # Assume __delitem__ exists</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+             <span class="c1"># Should ideally not happen if the __getitem__ above succeeded, but handle defensively.</span>
+             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Error during deletion itself for key/index &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+             <span class="k">raise</span> <span class="n">e</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e_del</span><span class="p">:</span>
+             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Unexpected error during deletion itself for key/index &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e_del</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+             <span class="k">raise</span> <span class="n">e_del</span>
+
+
+        <span class="c1"># If deletion succeeded, notify subscribers.</span>
         <span class="n">new_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="s1">&#39;__len__&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">({</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;delitem&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">key</span><span class="p">],</span>              <span class="c1"># Path is the key or index deleted</span>
-            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>              <span class="c1"># No new value associated with delete</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;delitem&quot;</span><span class="p">,</span>          <span class="c1"># Use &quot;delitem&quot; or potentially &quot;pop&quot; if consistent</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">key</span><span class="p">],</span>              <span class="c1"># Path is the key or index that was deleted</span>
+            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>              <span class="c1"># No *new* value associated with deletion</span>
             <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="n">key</span> <span class="k">if</span> <span class="n">is_mapping</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="c1"># Include key only for mappings</span>
-            <span class="s2">&quot;old_value&quot;</span><span class="p">:</span> <span class="n">old_value</span><span class="p">,</span>     <span class="c1"># The value that was deleted</span>
-            <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="n">new_len</span>           <span class="c1"># New length after deletion</span>
+            <span class="s2">&quot;old_value&quot;</span><span class="p">:</span> <span class="n">old_value</span><span class="p">,</span>     <span class="c1"># The value that was actually deleted</span>
+            <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="n">new_len</span>           <span class="c1"># The new length after deletion</span>
         <span class="p">})</span></div>
 
 
 <div class="viewcode-block" id="ObservableValue.update">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.update">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{},</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates the wrapped dictionary with key-value pairs and notifies for each change.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{},</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates the wrapped dictionary with key-value pairs from another mapping and/or keyword arguments, notifying subscribers for each change.</span>
 
-<span class="sd">        Works like the standard dictionary `update()` method but ensures that</span>
-<span class="sd">        each key added or modified triggers an individual &quot;setitem&quot; notification.</span>
+<span class="sd">        Mimics the behavior of `dict.update()`. It iterates through the items to be</span>
+<span class="sd">        added or updated and uses the intercepted `__setitem__` method for each one.</span>
+<span class="sd">        This ensures that subscribers (like Viz) receive individual &quot;setitem&quot;</span>
+<span class="sd">        notifications for every key that is added or whose value is changed, allowing</span>
+<span class="sd">        for more granular UI updates compared to a single bulk update notification.</span>
 
-<span class="sd">        Requires the wrapped value to be a mutable mapping (like a `dict`).</span>
+<span class="sd">        Requires the wrapped value (`self.get()`) to be a mutable mapping (like a</span>
+<span class="sd">        standard Python `dict`).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            other: Can be another dictionary, an object implementing the `Mapping`</span>
+<span class="sd">                   protocol, or an iterable of key-value pairs (like `[(&#39;a&#39;, 1), (&#39;b&#39;, 2)]`).</span>
+<span class="sd">                   Keys and values from `other` will be added/updated in the wrapped dict.</span>
+<span class="sd">            **kwargs: Keyword arguments are treated as additional key-value pairs</span>
+<span class="sd">                      to add or update in the wrapped dictionary.</span>
 
 <span class="sd">        Raises:</span>
-<span class="sd">            TypeError: If the wrapped value is not a dictionary or similar mutable mapping.</span>
+<span class="sd">            AttributeError: If the wrapped value does not behave like a dictionary (no `__setitem__`).</span>
+<span class="sd">            TypeError: If the wrapped value is not a dictionary or similar mutable mapping,</span>
+<span class="sd">                       or if the `other` argument is not a valid source for updates.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; settings = sidekick.ObservableValue({&#39;font&#39;: &#39;Arial&#39;, &#39;size&#39;: 10})</span>
+<span class="sd">            &gt;&gt;&gt; viz.show(&quot;Settings&quot;, settings)</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # Update using another dictionary</span>
+<span class="sd">            &gt;&gt;&gt; settings.update({&#39;size&#39;: 12, &#39;theme&#39;: &#39;dark&#39;}) # Sends 2 notifications</span>
+<span class="sd">            &gt;&gt;&gt; # Update using keyword arguments</span>
+<span class="sd">            &gt;&gt;&gt; settings.update(line_numbers=True, theme=&#39;light&#39;) # Sends 2 notifications (theme overwritten)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableMapping</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: update() requires a mutable mapping.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: update() requires the wrapped value to be a mutable mapping (e.g., dict).&quot;</span><span class="p">)</span>
 
         <span class="c1"># Combine the dictionary/mapping `other` and the keyword arguments `kwargs`.</span>
-        <span class="c1"># Using a temporary dict handles potential overlaps correctly.</span>
-        <span class="c1"># We don&#39;t call self._value.update() directly because we want to intercept</span>
-        <span class="c1"># each individual assignment to trigger notifications via __setitem__.</span>
-        <span class="n">items_to_update</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="s1">&#39;items&#39;</span><span class="p">):</span>
-             <span class="n">items_to_update</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="c1"># type: ignore</span>
-        <span class="k">elif</span> <span class="n">other</span><span class="p">:</span> <span class="c1"># Check if &#39;other&#39; is truthy to avoid errors with empty non-mappings</span>
-             <span class="k">try</span><span class="p">:</span> <span class="n">items_to_update</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">other</span><span class="p">))</span> <span class="c1"># Attempt conversion if not mapping</span>
-             <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue.update() received non-mapping &#39;other&#39; argument: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">items_to_update</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># We process `other` first, then `kwargs` to match dict.update behavior</span>
+        <span class="c1"># where kwargs can override keys present in `other`.</span>
+        <span class="c1"># We perform the updates item by item using self[key] = value to trigger</span>
+        <span class="c1"># individual notifications via our intercepted __setitem__.</span>
+        <span class="c1"># We don&#39;t call self._value.update() directly, as that would bypass notifications.</span>
+
+        <span class="n">items_to_process</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Process the &#39;other&#39; argument first</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="s1">&#39;keys&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">callable</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">keys</span><span class="p">):</span> <span class="c1"># More robust check for mapping-like</span>
+             <span class="k">try</span><span class="p">:</span> <span class="n">items_to_process</span><span class="o">.</span><span class="n">extend</span><span class="p">([(</span><span class="n">k</span><span class="p">,</span> <span class="n">other</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span> <span class="c1"># type: ignore</span>
+             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                  <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue.update(): Error iterating through &#39;other&#39; mapping: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                  <span class="c1"># Decide whether to raise or just ignore &#39;other&#39;</span>
+                  <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not process &#39;other&#39; argument provided to update(): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="s1">&#39;__iter__&#39;</span><span class="p">):</span> <span class="c1"># Check if it&#39;s an iterable of pairs</span>
+            <span class="k">try</span><span class="p">:</span> <span class="n">items_to_process</span><span class="o">.</span><span class="n">extend</span><span class="p">([(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">other</span><span class="p">])</span> <span class="c1"># type: ignore</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue.update(): &#39;other&#39; argument is iterable but not yielding key-value pairs: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                 <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;other&#39; argument must be a mapping or an iterable of pairs: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="k">elif</span> <span class="n">other</span><span class="p">:</span> <span class="c1"># If &#39;other&#39; is provided but not valid</span>
+             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;other&#39; argument must be a mapping or an iterable of pairs, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 
-        <span class="c1"># Iterate through the combined items and use our intercepted __setitem__</span>
-        <span class="c1"># for each one. This ensures notifications are sent for every change.</span>
-        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">items_to_update</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span> <span class="c1"># Calls our __setitem__(key, value)</span></div>
+        <span class="c1"># Add/override with keyword arguments</span>
+        <span class="k">if</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">items_to_process</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+
+        <span class="c1"># Now, iterate through the combined items and use our intercepted __setitem__</span>
+        <span class="c1"># for each one. This ensures individual notifications are sent.</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">items_to_process</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span> <span class="c1"># Calls our intercepted __setitem__(key, value)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e_set</span><span class="p">:</span>
+                 <span class="c1"># Log errors during the individual setitem calls but continue update if possible.</span>
+                 <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue.update(): Error setting key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; during update: </span><span class="si">{</span><span class="n">e_set</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+                 <span class="c1"># Optionally re-raise if strictness is needed: raise e_set</span>
 
 
     <span class="c1"># --- Set Methods ---</span>
@@ -608,77 +829,149 @@
 <div class="viewcode-block" id="ObservableValue.add">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.add">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds an element to the wrapped set and notifies subscribers if it wasn&#39;t already present.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableSet</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: add() requires a mutable set.&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds an element to the wrapped set and notifies subscribers if the element was not already present.</span>
 
-        <span class="c1"># Check if the element is already in the set *before* adding.</span>
-        <span class="c1"># Only notify if the set actually changes.</span>
-        <span class="k">if</span> <span class="n">element</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">:</span>
-            <span class="c1"># Perform the actual add operation.</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
-            <span class="c1"># Notify subscribers.</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">({</span>
-                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;add_set&quot;</span><span class="p">,</span>       <span class="c1"># Specific type for set addition</span>
-                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[],</span>              <span class="c1"># Set operations don&#39;t have a simple path index</span>
-                <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span>        <span class="c1"># The element that was added</span>
-                <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span> <span class="c1"># The new size of the set</span>
-            <span class="p">})</span></div>
+<span class="sd">        Mimics `set.add()`. Requires the wrapped value to be a mutable set.</span>
+<span class="sd">        If the element is already in the set, this method does nothing (and sends</span>
+<span class="sd">        no notification), matching standard set behavior.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            element (Any): The element to add to the set.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: If the wrapped value does not have an `add` method or is not a set.</span>
+<span class="sd">            TypeError: If the wrapped value is not a set or similar mutable set.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if the wrapped value behaves like a set.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableSet</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: add() requires the wrapped value to be a mutable set.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check if the element is already present *before* attempting to add.</span>
+        <span class="c1"># Only notify if the set&#39;s state actually changes.</span>
+        <span class="n">needs_add</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">element</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">:</span> <span class="c1"># type: ignore # Assume __contains__ exists for MutableSet</span>
+                 <span class="n">needs_add</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e_cont</span><span class="p">:</span>
+            <span class="c1"># Handle cases where element is unhashable for &#39;in&#39; check</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue.add(): Cannot check containment for element </span><span class="si">{</span><span class="n">element</span><span class="si">}</span><span class="s2"> (unhashable?): </span><span class="si">{</span><span class="n">e_cont</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># Attempt the add anyway, relying on the set&#39;s own handling</span>
+            <span class="n">needs_add</span> <span class="o">=</span> <span class="kc">True</span> <span class="c1"># Assume it might change the set</span>
+
+        <span class="k">if</span> <span class="n">needs_add</span><span class="p">:</span>
+            <span class="c1"># Perform the actual add operation on the wrapped set.</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="c1"># type: ignore # Assume add exists</span>
+                <span class="c1"># If add succeeded, notify subscribers.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">({</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;add_set&quot;</span><span class="p">,</span>       <span class="c1"># Specific type for set addition</span>
+                    <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[],</span>              <span class="c1"># Set operations don&#39;t have a simple path index</span>
+                    <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span>        <span class="c1"># The element that was actually added</span>
+                    <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span> <span class="c1"># The new size of the set</span>
+                <span class="p">})</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                 <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Wrapped object of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> has no &#39;add&#39; method.&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e_add</span><span class="p">:</span>
+                 <span class="c1"># Catch errors if the element is unhashable for the add operation itself.</span>
+                 <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue.add(): Failed to add element </span><span class="si">{</span><span class="n">element</span><span class="si">}</span><span class="s2"> (unhashable?): </span><span class="si">{</span><span class="n">e_add</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                 <span class="k">raise</span> <span class="n">e_add</span> <span class="c1"># Re-raise the TypeError</span></div>
+
 
 
 <div class="viewcode-block" id="ObservableValue.discard">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.discard">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">discard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">         </span><span class="sd">&quot;&quot;&quot;Removes an element from the wrapped set if it is present and notifies.&quot;&quot;&quot;</span>
-         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableSet</span><span class="p">):</span>
-             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: discard() requires a mutable set.&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="sd">&quot;&quot;&quot;Removes an element from the wrapped set if it is present, and notifies subscribers if removal occurred.</span>
 
-         <span class="c1"># Check if the element is actually in the set *before* discarding.</span>
-         <span class="c1"># Only notify if the set actually changes.</span>
-         <span class="k">if</span> <span class="n">element</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">:</span>
-            <span class="c1"># Perform the actual discard operation.</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
-            <span class="c1"># Notify subscribers.</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">({</span>
-                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;discard_set&quot;</span><span class="p">,</span> <span class="c1"># Specific type for set removal</span>
-                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[],</span>            <span class="c1"># No simple path index</span>
-                <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>         <span class="c1"># No new value</span>
-                <span class="s2">&quot;old_value&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span>  <span class="c1"># The element that was removed</span>
-                <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span> <span class="c1"># The new size of the set</span>
-            <span class="p">})</span></div>
+<span class="sd">         Mimics `set.discard()`. Requires the wrapped value to be a mutable set.</span>
+<span class="sd">         If the element is not found in the set, this method does nothing (and sends</span>
+<span class="sd">         no notification), matching standard set behavior.</span>
+
+<span class="sd">         Args:</span>
+<span class="sd">             element (Any): The element to remove from the set.</span>
+
+<span class="sd">         Raises:</span>
+<span class="sd">             AttributeError: If the wrapped value does not have a `discard` method.</span>
+<span class="sd">             TypeError: If the wrapped value is not a set or similar.</span>
+<span class="sd">         &quot;&quot;&quot;</span>
+         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">MutableSet</span><span class="p">):</span>
+             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;ObservableValue: discard() requires the wrapped value to be a mutable set.&quot;</span><span class="p">)</span>
+
+         <span class="c1"># Check if the element is actually in the set *before* attempting to discard.</span>
+         <span class="c1"># Only notify if the set&#39;s state actually changes.</span>
+         <span class="n">needs_discard</span> <span class="o">=</span> <span class="kc">False</span>
+         <span class="k">try</span><span class="p">:</span>
+             <span class="k">if</span> <span class="n">element</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">:</span> <span class="c1"># type: ignore # Assume __contains__ exists</span>
+                 <span class="n">needs_discard</span> <span class="o">=</span> <span class="kc">True</span>
+         <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e_cont</span><span class="p">:</span>
+             <span class="c1"># Element might be unhashable, discard will handle it, no need to notify if check fails</span>
+             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue.discard(): Cannot check containment for element </span><span class="si">{</span><span class="n">element</span><span class="si">}</span><span class="s2"> (unhashable?): </span><span class="si">{</span><span class="n">e_cont</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+             <span class="c1"># Proceed to discard, let the set handle unhashable if necessary</span>
+             <span class="k">pass</span>
+
+
+         <span class="k">if</span> <span class="n">needs_discard</span><span class="p">:</span>
+             <span class="c1"># Perform the actual discard operation on the wrapped set.</span>
+             <span class="k">try</span><span class="p">:</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="c1"># type: ignore # Assume discard exists</span>
+                 <span class="c1"># If discard potentially removed the element (it was present), notify.</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">_notify</span><span class="p">({</span>
+                     <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;discard_set&quot;</span><span class="p">,</span> <span class="c1"># Specific type for set removal</span>
+                     <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[],</span>            <span class="c1"># No simple path index for set elements</span>
+                     <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>         <span class="c1"># No *new* value associated with removal</span>
+                     <span class="s2">&quot;old_value&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span>  <span class="c1"># The element that was targeted for removal</span>
+                     <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span> <span class="c1"># The new size of the set</span>
+                 <span class="p">})</span>
+             <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                  <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Wrapped object of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> has no &#39;discard&#39; method.&quot;</span><span class="p">)</span>
+             <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e_disc</span><span class="p">:</span>
+                  <span class="c1"># Catch errors if the element is unhashable for discard.</span>
+                  <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue.discard(): Failed to discard element </span><span class="si">{</span><span class="n">element</span><span class="si">}</span><span class="s2"> (unhashable?): </span><span class="si">{</span><span class="n">e_disc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                  <span class="k">raise</span> <span class="n">e_disc</span> <span class="c1"># Re-raise</span></div>
+
 
 
     <span class="c1"># --- Standard Dunder Methods (Delegation) ---</span>
-    <span class="c1"># These methods make the ObservableValue wrapper behave more like the</span>
-    <span class="c1"># value it contains for common operations like getting attributes, string</span>
-    <span class="c1"># representation, comparisons, length checks, iteration, etc. They mostly</span>
-    <span class="c1"># just &quot;delegate&quot; the operation to the wrapped value.</span>
+    <span class="c1"># These methods allow the ObservableValue wrapper to behave more like the</span>
+    <span class="c1"># value it contains for common Python operations (attribute access, string</span>
+    <span class="c1"># conversion, comparisons, length checking, iteration, item access, etc.).</span>
+    <span class="c1"># They mostly delegate the operation directly to the wrapped `self._value`.</span>
 
 <div class="viewcode-block" id="ObservableValue.__getattr__">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.__getattr__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delegates attribute access to the wrapped value.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delegates attribute access to the wrapped value if the attribute is not internal.</span>
 
-<span class="sd">        Allows you to access methods and attributes of the wrapped object</span>
-<span class="sd">        directly through the ObservableValue instance, for convenience.</span>
-<span class="sd">        For example, if `obs_list = ObservableValue([1, 2])`, you can call</span>
-<span class="sd">        `obs_list.count(1)` and it will correctly call the `count` method</span>
-<span class="sd">        of the underlying list.</span>
+<span class="sd">        This allows you to conveniently access methods and attributes of the wrapped</span>
+<span class="sd">        object directly through the `ObservableValue` instance. For example, if</span>
+<span class="sd">        `obs_list = ObservableValue([1, 2])`, calling `obs_list.count(1)` will correctly</span>
+<span class="sd">        delegate to the underlying list&#39;s `count` method.</span>
 
-<span class="sd">        It prevents access to the ObservableValue&#39;s own internal attributes</span>
-<span class="sd">        (like `_value`, `_subscribers`) via this delegation mechanism.</span>
+<span class="sd">        It prevents direct access to the `ObservableValue`&#39;s own internal attributes</span>
+<span class="sd">        (like `_value`, `_subscribers`) via this delegation mechanism to avoid conflicts.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name (str): The name of the attribute being accessed.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Any: The value of the attribute from the wrapped object.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: If the attribute name refers to an internal attribute of</span>
+<span class="sd">                            `ObservableValue` itself, or if the wrapped object does not</span>
+<span class="sd">                            have an attribute with the given `name`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Prevent accidental access to internal attributes via delegation.</span>
+        <span class="c1"># Prevent accidental delegation of the wrapper&#39;s internal attributes.</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ObservableValue</span><span class="o">.</span><span class="n">_obs_internal_attrs</span><span class="p">:</span>
-             <span class="c1"># Raise standard AttributeError if trying to access internals this way.</span>
-             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; object has no attribute &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; (internal attributes are protected)&quot;</span><span class="p">)</span>
+             <span class="c1"># Raise standard AttributeError if trying to access internal attributes this way.</span>
+             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; object has no attribute &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; (use .get() maybe? Internal attributes are protected)&quot;</span><span class="p">)</span>
 
         <span class="c1"># If the attribute name is not internal, try to get it from the wrapped value.</span>
-        <span class="c1"># This will raise an AttributeError if the wrapped value doesn&#39;t have it.</span>
+        <span class="c1"># This will raise AttributeError naturally if the wrapped value doesn&#39;t have it.</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-            <span class="c1"># Make the error message clearer, indicating it failed on the wrapped value.</span>
+            <span class="c1"># Re-raise AttributeError with a more informative message.</span>
              <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; object (wrapped by ObservableValue) has no attribute &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span></div>
 
 
@@ -688,103 +981,167 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets internal attributes or delegates attribute setting to the wrapped value.</span>
 
-<span class="sd">        - If `name` refers to one of the ObservableValue&#39;s own internal attributes</span>
-<span class="sd">          (like `_value`), it sets that internal attribute directly.</span>
-<span class="sd">        - Otherwise, it attempts to set the attribute on the *wrapped* object.</span>
+<span class="sd">        This method controls how attribute assignment works on the `ObservableValue` instance:</span>
 
-<span class="sd">        **Important:** Delegating attribute setting like this does **not**</span>
-<span class="sd">        automatically trigger notifications. If you need the Viz panel to update</span>
-<span class="sd">        when an attribute of a wrapped *object* changes, you either need to:</span>
-<span class="sd">          a) Call `.set(self.get())` on the ObservableValue after modifying the</span>
-<span class="sd">             wrapped object&#39;s attribute to force a full refresh notification.</span>
-<span class="sd">          b) Wrap the mutable attributes *within* your custom object using</span>
-<span class="sd">             their own `ObservableValue` instances if possible.</span>
+<span class="sd">        *   If the `name` being assigned matches one of the `ObservableValue`&#39;s own</span>
+<span class="sd">            internal attributes (defined in `_obs_internal_attrs`, e.g., `_value`),</span>
+<span class="sd">            it sets that internal attribute directly on the wrapper instance itself.</span>
+<span class="sd">        *   Otherwise (if `name` is not an internal attribute), it attempts to set the</span>
+<span class="sd">            attribute with the given `name` and `value` directly on the *wrapped object*</span>
+<span class="sd">            (`self._value`).</span>
+
+<span class="sd">        **Important:** Delegating attribute setting to the wrapped object via this method</span>
+<span class="sd">        does **not** automatically trigger notifications to subscribers like Viz.</span>
+<span class="sd">        If you need the Viz panel to update when you change an attribute of a wrapped</span>
+<span class="sd">        *custom object*, you have several options:</span>
+<span class="sd">          1.  Call `.set(self.get())` on the `ObservableValue` *after* modifying the</span>
+<span class="sd">              wrapped object&#39;s attribute(s). This forces a full &quot;set&quot; notification,</span>
+<span class="sd">              telling Viz to re-render the entire object display.</span>
+<span class="sd">          2.  If the attribute itself holds mutable data (like a list), consider</span>
+<span class="sd">              wrapping that attribute&#39;s value in its *own* `ObservableValue`.</span>
+<span class="sd">          3.  If the custom object has its own notification mechanism, trigger it manually.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name (str): The name of the attribute to set.</span>
+<span class="sd">            value (Any): The value to assign to the attribute.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: If attempting to set an attribute on a wrapped object that</span>
+<span class="sd">                            doesn&#39;t support attribute assignment (e.g., built-in types</span>
+<span class="sd">                            like `int` or `list`, or objects without `__slots__` or</span>
+<span class="sd">                            `__dict__` allowing the assignment).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Check if the attribute name is one of the internal ones.</span>
+        <span class="c1"># Check if the attribute name is one of the predefined internal ones.</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ObservableValue</span><span class="o">.</span><span class="n">_obs_internal_attrs</span><span class="p">:</span>
-            <span class="c1"># Set internal attributes directly on the ObservableValue instance.</span>
+            <span class="c1"># If internal, set the attribute directly on the ObservableValue instance itself</span>
+            <span class="c1"># using object.__setattr__ to bypass our own __setattr__ override.</span>
             <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Otherwise, delegate the attribute setting to the wrapped object.</span>
-            <span class="c1"># Note: This does NOT trigger _notify() automatically.</span>
+            <span class="c1"># If not internal, delegate the attribute setting to the wrapped object.</span>
+            <span class="c1"># Note: This delegation does NOT automatically trigger self._notify().</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                 <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot set attribute &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;; &#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; object (wrapped by ObservableValue) may not support attribute assignment or the attribute is read-only.&quot;</span><span class="p">)</span></div>
+            <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                 <span class="c1"># Provide a clearer error if setting the attribute on the wrapped object fails.</span>
+                 <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot set attribute &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; on wrapped object of type &quot;</span>
+                                      <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="ObservableValue.__repr__">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.__repr__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a string representation like `ObservableValue([...])`.&quot;&quot;&quot;</span>
-        <span class="c1"># Show that it&#39;s an ObservableValue wrapping the inner value&#39;s repr.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a string representation showing it&#39;s an ObservableValue wrapping another value.</span>
+
+<span class="sd">        Example: `ObservableValue([1, 2, 3])`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Provide a representation that clearly indicates it&#39;s an ObservableValue wrapper.</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;ObservableValue(</span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span></div>
 
 
 <div class="viewcode-block" id="ObservableValue.__str__">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.__str__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the string representation of the *wrapped* value.&quot;&quot;&quot;</span>
-        <span class="c1"># Behaves like the wrapped value when converted to string.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the string representation of the *wrapped* value.</span>
+
+<span class="sd">        Allows `str(my_observable)` to behave the same as `str(my_observable.get())`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Delegate string conversion directly to the wrapped value.</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ObservableValue.__eq__">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.__eq__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compares the *wrapped* value for equality.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compares the *wrapped* value for equality.</span>
+
+<span class="sd">        Allows comparing an `ObservableValue` directly with another value or</span>
+<span class="sd">        another `ObservableValue`. The comparison is performed on the underlying</span>
+<span class="sd">        wrapped values.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; obs1 = ObservableValue([1, 2])</span>
+<span class="sd">            &gt;&gt;&gt; obs2 = ObservableValue([1, 2])</span>
+<span class="sd">            &gt;&gt;&gt; obs1 == [1, 2] # True</span>
+<span class="sd">            &gt;&gt;&gt; obs1 == obs2   # True</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># If comparing with another ObservableValue, compare their wrapped values.</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ObservableValue</span><span class="p">):</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">_value</span>
-        <span class="c1"># Otherwise, compare the wrapped value with the other object directly.</span>
+        <span class="c1"># Otherwise, compare the wrapped value directly with the other object.</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">==</span> <span class="n">other</span></div>
 
 
 <div class="viewcode-block" id="ObservableValue.__len__">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.__len__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the length of the wrapped value (if it has one).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the length of the wrapped value, if the wrapped value supports `len()`.</span>
 
-<span class="sd">        Allows using `len(my_observable)` if the wrapped object supports it.</span>
+<span class="sd">        Allows using `len(my_observable)` just like `len(my_observable.get())`.</span>
 
 <span class="sd">        Raises:</span>
-<span class="sd">            TypeError: If the wrapped object does not support `len()`.</span>
+<span class="sd">            TypeError: If the wrapped object type does not have a defined length</span>
+<span class="sd">                       (e.g., numbers, None, objects without `__len__`).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Delegate len() call to the wrapped value.</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="s1">&#39;__len__&#39;</span><span class="p">):</span>
+        <span class="c1"># Delegate the len() call to the wrapped value.</span>
+        <span class="c1"># Check explicitly for __len__ first for clarity.</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="s1">&#39;__len__&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="s1">&#39;__len__&#39;</span><span class="p">)):</span>
             <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Type ignore helps linters understand len() works here</span>
                 <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span> <span class="c1"># type: ignore</span>
             <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="c1"># Re-raise with context if len() fails unexpectedly on an object that has __len__</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Object of type &#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; has __len__ but raised TypeError: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+                <span class="c1"># Re-raise with context if len() fails unexpectedly.</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Object of type &#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; (wrapped) has __len__ but raised TypeError: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Raise standard TypeError if wrapped object isn&#39;t sizable.</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Object of type &#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; (wrapped by ObservableValue) has no len()&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ObservableValue.__getitem__">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.__getitem__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Allows accessing items/keys of the wrapped value using `[]`.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Allows accessing items/keys of the wrapped value using square bracket notation (`[]`).</span>
 
-<span class="sd">        Allows `my_observable[key]` if the wrapped object supports it (like</span>
-<span class="sd">        lists or dictionaries).</span>
+<span class="sd">        Enables syntax like `my_observable[key]` or `my_observable[index]` if the</span>
+<span class="sd">        wrapped object (`self.get()`) supports item access (like lists, dictionaries,</span>
+<span class="sd">        or custom objects implementing `__getitem__`).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (Any): The key or index to access within the wrapped object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Any: The value associated with the key/index in the wrapped object.</span>
 
 <span class="sd">        Raises:</span>
-<span class="sd">            TypeError: If the wrapped object does not support `[]` access.</span>
-<span class="sd">            KeyError/IndexError: If the key/index is invalid for the wrapped object.</span>
+<span class="sd">            TypeError: If the wrapped object does not support item access (`__getitem__`).</span>
+<span class="sd">            KeyError: If the wrapped object is a dictionary and the key is not found.</span>
+<span class="sd">            IndexError: If the wrapped object is a list and the index is out of range.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Delegate item access (obj[key]) to the wrapped value.</span>
+        <span class="c1"># Delegate item access (obj[key]) directly to the wrapped value.</span>
+        <span class="c1"># This relies on the wrapped object&#39;s __getitem__ implementation.</span>
+        <span class="c1"># We check common types first for better error messages.</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="p">(</span><span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Mapping</span><span class="p">)):</span>
-             <span class="c1"># This will raise KeyError or IndexError naturally if key is invalid.</span>
              <span class="k">try</span><span class="p">:</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="c1"># type: ignore</span>
+                <span class="c1"># This will naturally raise KeyError or IndexError if the key/index is invalid.</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="c1"># type: ignore # Assume subscriptable</span>
+             <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                 <span class="k">raise</span> <span class="n">e</span> <span class="c1"># Re-raise standard access errors</span>
              <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="c1"># Provide more context in case of error</span>
+                <span class="c1"># Provide more context for unexpected errors during access.</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error during ObservableValue __getitem__ for key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="k">raise</span> <span class="n">e</span> <span class="c1"># Re-raise original error</span>
+        <span class="c1"># If not a standard sequence/mapping, check if it implements __getitem__ anyway.</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="s1">&#39;__getitem__&#39;</span><span class="p">):</span>
+             <span class="k">try</span><span class="p">:</span>
+                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="c1"># type: ignore</span>
+             <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span> <span class="c1"># Catch standard errors</span>
+                 <span class="k">raise</span> <span class="n">e</span>
+             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error during custom __getitem__ for key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">e</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; object (wrapped by ObservableValue) is not subscriptable (doesn&#39;t support [])&quot;</span><span class="p">)</span></div>
+            <span class="c1"># Raise TypeError if the wrapped object fundamentally doesn&#39;t support item access.</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; object (wrapped by ObservableValue) is not subscriptable (does not support [])&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ObservableValue.__iter__">
@@ -792,50 +1149,56 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Allows iterating over the wrapped value (e.g., in a `for` loop).</span>
 
-<span class="sd">        Allows `for item in my_observable:` if the wrapped object is iterable.</span>
+<span class="sd">        Enables syntax like `for item in my_observable:` if the wrapped object</span>
+<span class="sd">        (`self.get()`) is itself iterable (like lists, dictionaries, sets, strings,</span>
+<span class="sd">        or custom objects implementing `__iter__`).</span>
+
+<span class="sd">        Yields:</span>
+<span class="sd">            The items produced by iterating over the wrapped value.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            TypeError: If the wrapped object is not iterable.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Delegate iteration requests to the wrapped value.</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="s1">&#39;__iter__&#39;</span><span class="p">):</span>
-            <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span> <span class="c1"># type: ignore</span>
+        <span class="c1"># Delegate iteration request directly to the wrapped value.</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="s1">&#39;__iter__&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="s1">&#39;__iter__&#39;</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span> <span class="c1"># type: ignore # Assume iterable</span>
         <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Raise standard TypeError if the wrapped object cannot be iterated.</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; object (wrapped by ObservableValue) is not iterable&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ObservableValue.__contains__">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.observable_value.ObservableValue.__contains__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Allows using the `in` operator (e.g., `item in my_observable`).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Allows using the `in` operator to check for containment in the wrapped value.</span>
 
-<span class="sd">        Checks if the `item` is present in the wrapped value.</span>
+<span class="sd">        Enables syntax like `element in my_observable` if the wrapped object</span>
+<span class="sd">        (`self.get()`) supports containment checks (like lists, dictionaries checking keys,</span>
+<span class="sd">        sets, strings, or custom objects implementing `__contains__`).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            item (Any): The item to check for containment within the wrapped value.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if the `item` is found in the wrapped value, False otherwise.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            TypeError: If the wrapped object does not support the `in` operator</span>
-<span class="sd">                       or iteration as a fallback.</span>
+<span class="sd">                       (typically requires `__contains__` or being iterable).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Delegate the &#39;in&#39; check to the wrapped value if possible.</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="s1">&#39;__contains__&#39;</span><span class="p">):</span>
-            <span class="k">try</span><span class="p">:</span>
-                 <span class="k">return</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="c1"># type: ignore</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                 <span class="c1"># Provide more context if &#39;in&#39; fails unexpectedly</span>
-                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error during ObservableValue __contains__ for item &#39;</span><span class="si">{</span><span class="n">item</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                 <span class="k">raise</span> <span class="n">e</span> <span class="c1"># Re-raise original error</span>
-
-        <span class="c1"># Fallback: If no __contains__, try iterating (less efficient).</span>
-        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="s1">&#39;__iter__&#39;</span><span class="p">):</span>
-             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ObservableValue: Using iteration fallback for __contains__ check on type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-             <span class="k">try</span><span class="p">:</span>
-                 <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">:</span> <span class="c1"># type: ignore</span>
-                     <span class="k">if</span> <span class="n">element</span> <span class="o">==</span> <span class="n">item</span><span class="p">:</span> <span class="k">return</span> <span class="kc">True</span>
-                 <span class="k">return</span> <span class="kc">False</span>
-             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                 <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error during iteration fallback for &#39;in&#39; operator on type &#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># If neither __contains__ nor __iter__ exists.</span>
-             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; object (wrapped by ObservableValue) does not support the &#39;in&#39; operator.&quot;</span><span class="p">)</span></div>
+        <span class="c1"># Delegate the &#39;in&#39; check (containment) directly to the wrapped value.</span>
+        <span class="c1"># This relies on the wrapped object&#39;s __contains__ method if it exists,</span>
+        <span class="c1"># or falls back to iteration if __contains__ is missing but __iter__ exists.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Type ignore helps linters understand &#39;in&#39; works with various types</span>
+            <span class="k">return</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="c1"># type: ignore</span>
+        <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Re-raise TypeError if &#39;in&#39; is fundamentally not supported by the wrapped type.</span>
+             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; object (wrapped by ObservableValue) does not support the &#39;in&#39; operator: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e_cont</span><span class="p">:</span>
+             <span class="c1"># Catch other unexpected errors during the &#39;in&#39; check.</span>
+             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error during ObservableValue __contains__ for item &#39;</span><span class="si">{</span><span class="n">item</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e_cont</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+             <span class="k">raise</span> <span class="n">e_cont</span> <span class="c1"># Re-raise original error</span></div>
 </div>
 
 </pre></div>

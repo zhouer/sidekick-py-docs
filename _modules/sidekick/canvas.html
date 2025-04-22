@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>sidekick.canvas &mdash; Sidekick Python Library 0.0.3 documentation</title>
+  <title>sidekick.canvas &mdash; Sidekick Python Library 0.0.5 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=47de8214"></script>
+      <script src="../../_static/documentation_options.js?v=282f96c0"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -74,42 +74,318 @@
            <div itemprop="articleBody">
              
   <h1>Source code for sidekick.canvas</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Provides the Canvas class for creating a 2D drawing surface in Sidekick.</span>
+<span></span><span class="sd">&quot;&quot;&quot;Provides the Canvas class for creating a 2D drawing surface in Sidekick.</span>
 
-<span class="sd">Use the `sidekick.Canvas` class to create a blank area in the Sidekick panel</span>
-<span class="sd">where you can draw simple shapes like lines, rectangles, and circles using</span>
-<span class="sd">Python commands.</span>
+<span class="sd">Use the `sidekick.Canvas` class to create a blank rectangular area within the</span>
+<span class="sd">Sidekick panel where your Python script can draw simple graphics. This allows</span>
+<span class="sd">you to visually represent geometric concepts, create algorithm visualizations,</span>
+<span class="sd">build simple game graphics, or even produce basic animations controlled by your code.</span>
 
-<span class="sd">Think of it as a basic digital whiteboard or a simple drawing API that lets</span>
-<span class="sd">you visually represent geometric concepts or create simple graphics controlled</span>
-<span class="sd">by your script.</span>
+<span class="sd">Key Features:</span>
+
+<span class="sd">*   **Drawing Primitives:** Draw basic shapes like lines (`draw_line`),</span>
+<span class="sd">    rectangles (`draw_rect`), circles (`draw_circle`), polygons (`draw_polygon`),</span>
+<span class="sd">    ellipses (`draw_ellipse`), and text (`draw_text`).</span>
+<span class="sd">*   **Styling:** Control the appearance with options for fill color (`fill_color`),</span>
+<span class="sd">    line color (`line_color`), line width (`line_width`), and text size/color.</span>
+<span class="sd">*   **Coordinate System:** The origin (0, 0) is at the **top-left corner**.</span>
+<span class="sd">    The x-axis increases to the right, and the y-axis increases downwards.</span>
+<span class="sd">    All units (coordinates, dimensions, radii) are in pixels.</span>
+<span class="sd">*   **Double Buffering:** Create smooth, flicker-free animations using the</span>
+<span class="sd">    `canvas.buffer()` context manager. This draws a complete frame off-screen</span>
+<span class="sd">    before displaying it all at once.</span>
+<span class="sd">*   **Interactivity:** Make your canvas respond to user clicks using the</span>
+<span class="sd">    `on_click()` method to register a callback function.</span>
+
+<span class="sd">Basic Usage:</span>
+<span class="sd">    &gt;&gt;&gt; import sidekick</span>
+<span class="sd">    &gt;&gt;&gt; # Create a 300 pixel wide, 200 pixel tall canvas</span>
+<span class="sd">    &gt;&gt;&gt; canvas = sidekick.Canvas(300, 200)</span>
+<span class="sd">    &gt;&gt;&gt;</span>
+<span class="sd">    &gt;&gt;&gt; # Draw a red diagonal line across the canvas</span>
+<span class="sd">    &gt;&gt;&gt; canvas.draw_line(10, 10, 290, 190, line_color=&#39;red&#39;)</span>
+<span class="sd">    &gt;&gt;&gt;</span>
+<span class="sd">    &gt;&gt;&gt; # Draw a blue filled rectangle with a thick border</span>
+<span class="sd">    &gt;&gt;&gt; canvas.draw_rect(50, 50, 100, 80, fill_color=&#39;blue&#39;, line_width=3)</span>
+<span class="sd">    &gt;&gt;&gt;</span>
+<span class="sd">    &gt;&gt;&gt; # Draw some text</span>
+<span class="sd">    &gt;&gt;&gt; canvas.draw_text(150, 120, &quot;Hello Canvas!&quot;, text_color=&#39;white&#39;, text_size=16)</span>
+
+<span class="sd">Animation Example (using double buffering):</span>
+<span class="sd">    &gt;&gt;&gt; import sidekick, time, math</span>
+<span class="sd">    &gt;&gt;&gt; canvas = sidekick.Canvas(200, 150)</span>
+<span class="sd">    &gt;&gt;&gt; angle = 0</span>
+<span class="sd">    &gt;&gt;&gt; for _ in range(60): # Animate briefly</span>
+<span class="sd">    ...     # --- Draw onto a hidden buffer ---</span>
+<span class="sd">    ...     with canvas.buffer() as buf: # &#39;buf&#39; lets you draw on the hidden buffer</span>
+<span class="sd">    ...         x = 100 + 80 * math.cos(angle)</span>
+<span class="sd">    ...         y = 75 + 50 * math.sin(angle)</span>
+<span class="sd">    ...         buf.draw_circle(int(x), int(y), 10, fill_color=&#39;orange&#39;)</span>
+<span class="sd">    ...         buf.draw_text(10, 10, f&quot;Angle: {angle:.1f}&quot;)</span>
+<span class="sd">    ...     # --- Display the hidden buffer ---</span>
+<span class="sd">    ...     # When the &#39;with&#39; block ends, the hidden buffer&#39;s content is shown.</span>
+<span class="sd">    ...     angle += 0.1</span>
+<span class="sd">    ...     time.sleep(0.05)</span>
+<span class="sd">    ...</span>
+<span class="sd">    &gt;&gt;&gt; print(&quot;Animation finished.&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; # Use sidekick.run_forever() if you also need click handling.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span> <span class="c1"># Used in examples, good to keep imported</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">ContextManager</span><span class="p">,</span> <span class="n">Union</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">connection</span> <span class="c1"># Required for get_next_command_id</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">connection</span> <span class="c1"># For connection errors</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base_module</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModule</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span> <span class="c1"># Callable is included for consistency, though not used directly here</span>
+
+<span class="c1"># Type hint for a list of points used in polylines/polygons</span>
+<span class="c1"># Represents a sequence of (x, y) integer coordinates.</span>
+<span class="c1"># Example: [(10, 20), (50, 60), (30, 40)]</span>
+<span class="n">PointList</span> <span class="o">=</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>
+
+<span class="c1"># ==============================================================================</span>
+<span class="c1"># == Internal: Canvas Buffer Proxy Class ==</span>
+<span class="c1"># ==============================================================================</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_CanvasBufferProxy</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal helper object used with the `canvas.buffer()` context manager. (Internal).</span>
+
+<span class="sd">    This proxy object is yielded by the `canvas.buffer()` context manager&#39;s</span>
+<span class="sd">    `__enter__` method. It mimics the drawing methods of the main `Canvas` class</span>
+<span class="sd">    (like `draw_line`, `draw_rect`). However, when you call a drawing method on</span>
+<span class="sd">    this proxy (e.g., `buf.draw_circle(...)`), it automatically directs the drawing</span>
+<span class="sd">    command to a specific hidden (offscreen) drawing buffer instead of the main</span>
+<span class="sd">    visible canvas. This is the core mechanism enabling double buffering.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        This is an internal implementation detail of the double buffering feature.</span>
+<span class="sd">        Users should interact with it via the `canvas.buffer()` context manager,</span>
+<span class="sd">        not by creating instances of this class directly.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        canvas (Canvas): The parent `Canvas` instance this proxy belongs to.</span>
+<span class="sd">        buffer_id (int): The unique ID (greater than 0) of the specific offscreen</span>
+<span class="sd">            buffer that drawing commands on this proxy should target.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">canvas</span><span class="p">:</span> <span class="s1">&#39;Canvas&#39;</span><span class="p">,</span> <span class="n">buffer_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span> <span class="o">=</span> <span class="n">canvas</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span> <span class="o">=</span> <span class="n">buffer_id</span>
+        <span class="c1"># Internal sanity check for buffer ID validity.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">buffer_id</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">buffer_id</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;_CanvasBufferProxy requires a positive integer offscreen buffer ID.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># --- Mirrored Drawing Methods ---</span>
+    <span class="c1"># Each method below forwards the call to the corresponding public method</span>
+    <span class="c1"># on the parent `Canvas` instance, but explicitly sets the `buffer_id`</span>
+    <span class="c1"># argument to the specific offscreen buffer ID managed by this proxy.</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clears the content of the specific offscreen buffer associated with this proxy.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">clear</span><span class="p">(</span><span class="n">buffer_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">x2</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y2</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                  <span class="n">line_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">line_width</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a line on the specific offscreen buffer.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">draw_line</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">line_color</span><span class="p">,</span> <span class="n">line_width</span><span class="p">,</span>
+                               <span class="n">buffer_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_rect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                  <span class="n">fill_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">line_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">line_width</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a rectangle on the specific offscreen buffer.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">draw_rect</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">fill_color</span><span class="p">,</span> <span class="n">line_color</span><span class="p">,</span> <span class="n">line_width</span><span class="p">,</span>
+                              <span class="n">buffer_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_circle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">cy</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                    <span class="n">fill_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">line_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">line_width</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a circle on the specific offscreen buffer.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">draw_circle</span><span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">fill_color</span><span class="p">,</span> <span class="n">line_color</span><span class="p">,</span> <span class="n">line_width</span><span class="p">,</span>
+                                <span class="n">buffer_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_polyline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">PointList</span><span class="p">,</span>
+                      <span class="n">line_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="n">line_width</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a series of connected lines (polyline) on the specific offscreen buffer.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">draw_polyline</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">line_color</span><span class="p">,</span> <span class="n">line_width</span><span class="p">,</span>
+                                  <span class="n">buffer_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_polygon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">PointList</span><span class="p">,</span>
+                     <span class="n">fill_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">line_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">line_width</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a closed polygon on the specific offscreen buffer.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">draw_polygon</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">fill_color</span><span class="p">,</span> <span class="n">line_color</span><span class="p">,</span> <span class="n">line_width</span><span class="p">,</span>
+                                 <span class="n">buffer_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_ellipse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">cy</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">radius_x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">radius_y</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                     <span class="n">fill_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">line_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">line_width</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws an ellipse on the specific offscreen buffer.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">draw_ellipse</span><span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">radius_x</span><span class="p">,</span> <span class="n">radius_y</span><span class="p">,</span> <span class="n">fill_color</span><span class="p">,</span> <span class="n">line_color</span><span class="p">,</span> <span class="n">line_width</span><span class="p">,</span>
+                                  <span class="n">buffer_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                  <span class="n">text_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">text_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws text on the specific offscreen buffer.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">draw_text</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">text_color</span><span class="p">,</span> <span class="n">text_size</span><span class="p">,</span>
+                              <span class="n">buffer_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="p">)</span>
+
+<span class="c1"># ==============================================================================</span>
+<span class="c1"># == Internal: Canvas Buffer Context Manager Class ==</span>
+<span class="c1"># ==============================================================================</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_CanvasBufferContextManager</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal context manager returned by `canvas.buffer()` for double buffering. (Internal).</span>
+
+<span class="sd">    This class encapsulates the logic required to manage an offscreen buffer&#39;s</span>
+<span class="sd">    lifecycle for use within a `with` statement. It handles acquiring a buffer ID</span>
+<span class="sd">    from the canvas&#39;s pool, preparing the buffer (clearing it), yielding the proxy</span>
+<span class="sd">    object for drawing, and then performing the necessary actions upon exiting the</span>
+<span class="sd">    block (drawing the completed buffer to the visible screen and releasing the</span>
+<span class="sd">    buffer ID back to the pool).</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        This is an internal implementation detail. Users should interact with it</span>
+<span class="sd">        via the public `canvas.buffer()` method and a `with` statement.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        canvas (Canvas): The parent `Canvas` instance this context manager belongs to.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">canvas</span><span class="p">:</span> <span class="s1">&#39;Canvas&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span> <span class="o">=</span> <span class="n">canvas</span>
+        <span class="c1"># Stores the ID (&gt; 0) of the offscreen buffer acquired in __enter__. Initialized to None.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_CanvasBufferProxy</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepares and provides an offscreen buffer when entering the `with` block.</span>
+
+<span class="sd">        Steps:</span>
+<span class="sd">        1. Acquires an available offscreen buffer ID from the parent canvas&#39;s</span>
+<span class="sd">           internal pool (`_acquire_buffer_id`). This might involve sending a</span>
+<span class="sd">           &#39;createBuffer&#39; command to the UI if no reusable buffers are available.</span>
+<span class="sd">        2. Sends a command to the Sidekick UI to clear this newly acquired/reused</span>
+<span class="sd">           offscreen buffer, ensuring it starts as a blank slate for the new frame.</span>
+<span class="sd">        3. Creates and returns a `_CanvasBufferProxy` instance that is specifically</span>
+<span class="sd">           configured to target this acquired offscreen buffer ID.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            _CanvasBufferProxy: An object (`buf` in `with canvas.buffer() as buf:`)</span>
+<span class="sd">                that provides drawing methods operating on the hidden offscreen buffer.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get an available offscreen buffer ID (creates one in UI if needed).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">_acquire_buffer_id</span><span class="p">()</span> <span class="c1"># Raises on connection error</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Entering buffer context, acquired buffer ID </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Immediately clear the acquired offscreen buffer before the user draws on it.</span>
+        <span class="c1"># This uses the proxy&#39;s clear method which targets the correct buffer.</span>
+        <span class="n">_CanvasBufferProxy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="p">)</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span> <span class="c1"># Raises on connection error</span>
+
+        <span class="c1"># Return the proxy object that allows drawing onto this specific buffer.</span>
+        <span class="k">return</span> <span class="n">_CanvasBufferProxy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Finalizes buffer operations when exiting the `with` block.</span>
+
+<span class="sd">        Performs the crucial steps to display the drawn content and clean up:</span>
+<span class="sd">        1. Checks if an exception occurred within the `with` block.</span>
+<span class="sd">        2. **If no exception occurred:** Sends a command to draw the entire content</span>
+<span class="sd">           of the completed hidden offscreen buffer onto the visible canvas. This is</span>
+<span class="sd">           the &quot;flip&quot; or &quot;blit&quot; step that makes the new frame visible at once.</span>
+<span class="sd">        3. **Always (whether an exception occurred or not):** Releases the offscreen</span>
+<span class="sd">           buffer ID back to the parent canvas&#39;s internal pool (`_release_buffer_id`),</span>
+<span class="sd">           making it available for reuse in subsequent `with canvas.buffer():` blocks.</span>
+<span class="sd">        4. Returns `False` to ensure that any exception raised within the `with`</span>
+<span class="sd">           block is *not* suppressed and propagates outward normally.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            exc_type: The type of the exception raised within the `with` block,</span>
+<span class="sd">                or `None` if no exception occurred.</span>
+<span class="sd">            exc_val: The exception instance itself, or `None`.</span>
+<span class="sd">            exc_tb: The traceback object associated with the exception, or `None`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Always returns `False` to allow exceptions to propagate.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Ensure we actually acquired a buffer ID in __enter__; otherwise, something went wrong.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Exiting buffer context but _buffer_id is None! Cannot draw or release buffer.&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span> <span class="c1"># Don&#39;t suppress potential exceptions if state is inconsistent.</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Only perform the drawing operations if the &#39;with&#39; block completed without errors.</span>
+            <span class="k">if</span> <span class="n">exc_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Exiting buffer context normally. Drawing buffer </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="si">}</span><span class="s2"> to screen.&quot;</span><span class="p">)</span>
+                <span class="c1"># Draw the completed offscreen buffer onto the onscreen canvas.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">_send_draw_buffer</span><span class="p">(</span><span class="n">source_buffer_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="p">,</span> <span class="n">target_buffer_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">ONSCREEN_BUFFER_ID</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># If an error occurred inside the &#39;with&#39; block, log it. Critically, DO NOT</span>
+                <span class="c1"># draw the buffer to the screen, as it might contain an incomplete or</span>
+                <span class="c1"># incorrect frame due to the error.</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Exiting buffer context due to an exception (</span><span class="si">{</span><span class="n">exc_type</span><span class="si">}</span><span class="s2">). The content of buffer </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="si">}</span><span class="s2"> will NOT be drawn to the screen.&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">connection</span><span class="o">.</span><span class="n">SidekickConnectionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+             <span class="c1"># Log connection errors during the exit draw/clear operations but proceed to release buffer.</span>
+             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Connection error during buffer __exit__: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e_exit</span><span class="p">:</span>
+             <span class="c1"># Catch any other unexpected errors during exit operations.</span>
+             <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Unexpected error during buffer __exit__: </span><span class="si">{</span><span class="n">e_exit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># CRITICAL: Always release the buffer ID back to the pool, regardless of</span>
+        <span class="c1"># whether an error occurred inside the &#39;with&#39; block or during the exit drawing.</span>
+        <span class="c1"># This prevents buffer leaks.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_canvas</span><span class="o">.</span><span class="n">_release_buffer_id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span><span class="p">)</span>
+        <span class="c1"># Reset the stored ID for safety, ensuring it&#39;s not accidentally reused.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_id</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Return False ensures that any exception raised *within* the &#39;with&#39; block</span>
+        <span class="c1"># is not suppressed by the context manager and will continue to propagate outwards.</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+<span class="c1"># ==============================================================================</span>
+<span class="c1"># == Main Canvas Class ==</span>
+<span class="c1"># ==============================================================================</span>
 
 <div class="viewcode-block" id="Canvas">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Canvas</span><span class="p">(</span><span class="n">BaseModule</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a 2D drawing canvas module instance in the Sidekick UI.</span>
 
-<span class="sd">    Create an instance of this class to get a drawing area in Sidekick.</span>
-<span class="sd">    You can then call methods like `draw_line()`, `draw_rect()`, and</span>
-<span class="sd">    `draw_circle()` to draw shapes on it. Use `config()` to change the</span>
-<span class="sd">    drawing color, fill color, and line thickness.</span>
+<span class="sd">    Provides a surface within the Sidekick panel where your Python script can</span>
+<span class="sd">    programmatically draw shapes, lines, and text. It&#39;s useful for visualizing</span>
+<span class="sd">    algorithms, creating simple graphics or simulations, basic game displays,</span>
+<span class="sd">    or educational demonstrations.</span>
 
-<span class="sd">    Each drawing command sent to the UI includes a unique sequential ID</span>
-<span class="sd">    (`commandId`) to help Sidekick process drawing operations reliably,</span>
-<span class="sd">    especially if commands are sent very quickly.</span>
+<span class="sd">    Drawing commands (like `draw_line()`, `draw_rect()`) are sent immediately</span>
+<span class="sd">    to the Sidekick UI to update the visual representation. By default, these</span>
+<span class="sd">    draw directly onto the visible canvas area.</span>
+
+<span class="sd">    For creating animations or complex scenes smoothly without flickering, use the</span>
+<span class="sd">    `buffer()` method within a `with` statement. This enables &quot;double buffering&quot;,</span>
+<span class="sd">    where drawing happens on a hidden surface first, and the result is displayed</span>
+<span class="sd">    all at once (see module docstring or `buffer()` method documentation for examples).</span>
+
+<span class="sd">    You can also make the canvas interactive by responding to user clicks via the</span>
+<span class="sd">    `on_click()` method.</span>
 
 <span class="sd">    Attributes:</span>
-<span class="sd">        target_id (str): The unique identifier for this canvas instance.</span>
-<span class="sd">        width (int): The width of the canvas in pixels, as specified during creation.</span>
-<span class="sd">        height (int): The height of the canvas in pixels, as specified during creation.</span>
+<span class="sd">        target_id (str): The unique identifier for this canvas instance, used for</span>
+<span class="sd">            communication with the Sidekick UI. Generated automatically if not</span>
+<span class="sd">            provided during initialization.</span>
+<span class="sd">        width (int): The width of the canvas drawing area in pixels, set during</span>
+<span class="sd">            initialization. This value is read-only after creation.</span>
+<span class="sd">        height (int): The height of the canvas drawing area in pixels, set during</span>
+<span class="sd">            initialization. This value is read-only after creation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Class constant representing the ID of the main, visible (onscreen) buffer.</span>
+    <span class="c1"># Drawing commands target this buffer by default if `buffer_id` is None or 0.</span>
+    <span class="n">ONSCREEN_BUFFER_ID</span> <span class="o">=</span> <span class="mi">0</span>
+
 <div class="viewcode-block" id="Canvas.__init__">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -118,322 +394,998 @@
         <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">instance_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">spawn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="n">bg_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the Canvas object and optionally creates the UI element.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a new Canvas object and optionally creates its UI element in Sidekick.</span>
 
-<span class="sd">        Sets up the dimensions and background color for the canvas.</span>
+<span class="sd">        Sets up the dimensions and prepares the canvas for drawing commands. The</span>
+<span class="sd">        connection to Sidekick is established automatically during this initialization</span>
+<span class="sd">        if it hasn&#39;t been already (this might block).</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            width (int): The desired width of the canvas in pixels. Must be positive.</span>
-<span class="sd">            height (int): The desired height of the canvas in pixels. Must be positive.</span>
-<span class="sd">            instance_id (Optional[str]): A specific ID for this canvas instance.</span>
-<span class="sd">                - If `spawn=True` (default): Optional. A unique ID will be</span>
-<span class="sd">                  auto-generated if not provided.</span>
-<span class="sd">                - If `spawn=False`: **Required**. Must match the ID of an</span>
-<span class="sd">                  existing canvas element in the Sidekick UI.</span>
-<span class="sd">            spawn (bool): If True (default), a command is sent to create a new</span>
-<span class="sd">                canvas element in the Sidekick UI. If False, the library assumes</span>
-<span class="sd">                the canvas element already exists, and this object attaches to it.</span>
-<span class="sd">                If `spawn=False`, the `width`, `height`, and `bg_color` arguments</span>
-<span class="sd">                are ignored when sending the (empty) spawn command, but `width`</span>
-<span class="sd">                and `height` are still validated and stored locally.</span>
-<span class="sd">            bg_color (Optional[str]): A CSS color string for the canvas background</span>
-<span class="sd">                (e.g., &#39;white&#39;, &#39;#f0f0f0&#39;, &#39;rgb(50, 50, 50)&#39;). Only used if</span>
-<span class="sd">                `spawn=True`. If None, Sidekick uses a default background color.</span>
+<span class="sd">            width (int): The desired width of the canvas drawing area in pixels.</span>
+<span class="sd">                Must be a positive integer.</span>
+<span class="sd">            height (int): The desired height of the canvas drawing area in pixels.</span>
+<span class="sd">                Must be a positive integer.</span>
+<span class="sd">            instance_id (Optional[str]): A specific ID to assign to this canvas instance.</span>
+<span class="sd">                - If `spawn=True` (default): If provided, this ID will be used. Useful</span>
+<span class="sd">                  for deterministic identification. If `None`, a unique ID (e.g.,</span>
+<span class="sd">                  &quot;canvas-1&quot;) will be generated automatically.</span>
+<span class="sd">                - If `spawn=False`: This ID is **required** and must match the ID</span>
+<span class="sd">                  of an existing canvas element already present in the Sidekick UI</span>
+<span class="sd">                  that this Python object should connect to and control.</span>
+<span class="sd">            spawn (bool): If `True` (the default), a command is sent to Sidekick</span>
+<span class="sd">                (after connection) to create a new canvas UI element with the specified</span>
+<span class="sd">                `width` and `height`. If `False`, the library assumes a canvas element</span>
+<span class="sd">                with the given `instance_id` already exists in the UI, and this Python</span>
+<span class="sd">                object will simply attach to it for sending drawing commands or receiving</span>
+<span class="sd">                events. When `spawn=False`, the `width` and `height` arguments are</span>
+<span class="sd">                still validated locally but are not sent in the (empty) spawn command.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: If `width` or `height` are not positive integers, or if</span>
-<span class="sd">                        `spawn` is False and `instance_id` is not provided.</span>
-<span class="sd">            SidekickConnectionError (or subclass): If the connection to Sidekick</span>
-<span class="sd">                cannot be established.</span>
+<span class="sd">                `spawn` is False and `instance_id` is not provided.</span>
+<span class="sd">            SidekickConnectionError (or subclass): If the connection to the</span>
+<span class="sd">                Sidekick UI cannot be established or fails during initialization.</span>
 
 <span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; # Create a 300x200 canvas with a light gray background</span>
-<span class="sd">            &gt;&gt;&gt; canvas = sidekick.Canvas(300, 200, bg_color=&quot;#eeeeee&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; # Create a new 300x200 canvas in Sidekick</span>
+<span class="sd">            &gt;&gt;&gt; main_canvas = sidekick.Canvas(300, 200)</span>
 <span class="sd">            &gt;&gt;&gt;</span>
-<span class="sd">            &gt;&gt;&gt; # Attach to an existing canvas UI element named &quot;drawing-area&quot;</span>
-<span class="sd">            &gt;&gt;&gt; # Note: We still need dummy width/height for validation here.</span>
-<span class="sd">            &gt;&gt;&gt; existing_canvas = sidekick.Canvas(width=1, height=1,</span>
-<span class="sd">            ...                                 instance_id=&quot;drawing-area&quot;, spawn=False)</span>
+<span class="sd">            &gt;&gt;&gt; # Create another canvas with a specific ID</span>
+<span class="sd">            &gt;&gt;&gt; mini_map = sidekick.Canvas(100, 100, instance_id=&quot;ui-mini-map&quot;)</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # Assume a canvas with ID &quot;debug-overlay&quot; already exists in Sidekick.</span>
+<span class="sd">            &gt;&gt;&gt; # Attach a Python object to control it (local dimensions needed for validation).</span>
+<span class="sd">            &gt;&gt;&gt; overlay_control = sidekick.Canvas(100, 50, instance_id=&quot;debug-overlay&quot;, spawn=False)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Validate dimensions first, even if not spawning, to store them locally.</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">width</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="c1"># --- Validate Dimensions ---</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">width</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Canvas width must be a positive integer.&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">height</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">height</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">height</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">height</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Canvas height must be a positive integer.&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Prepare the payload for the initial &#39;spawn&#39; command.</span>
-        <span class="c1"># Only include details if we are actually creating the canvas (spawn=True).</span>
+        <span class="c1"># --- Prepare Spawn Payload ---</span>
+        <span class="c1"># The payload is only needed if we are creating (spawning) a new canvas.</span>
         <span class="n">spawn_payload</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="n">spawn</span><span class="p">:</span>
-             <span class="c1"># Keys must be camelCase for the protocol.</span>
-             <span class="n">spawn_payload</span><span class="p">[</span><span class="s2">&quot;width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">width</span>
-             <span class="n">spawn_payload</span><span class="p">[</span><span class="s2">&quot;height&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">height</span>
-             <span class="k">if</span> <span class="n">bg_color</span><span class="p">:</span>
-                 <span class="n">spawn_payload</span><span class="p">[</span><span class="s2">&quot;bgColor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bg_color</span>
+            <span class="c1"># Keys must be camelCase to match the communication protocol specification.</span>
+            <span class="n">spawn_payload</span><span class="p">[</span><span class="s2">&quot;width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">width</span>
+            <span class="n">spawn_payload</span><span class="p">[</span><span class="s2">&quot;height&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">height</span>
 
-        <span class="c1"># Call the base class initializer. It handles connection, ID, registration,</span>
-        <span class="c1"># and sending the spawn command if spawn=True.</span>
+        <span class="c1"># --- Initialize Base Class ---</span>
+        <span class="c1"># This handles:</span>
+        <span class="c1"># - Establishing the connection (blocking if needed, raises on error).</span>
+        <span class="c1"># - Generating or assigning the target_id.</span>
+        <span class="c1"># - Registering internal message handlers with the connection module.</span>
+        <span class="c1"># - Sending the &#39;spawn&#39; command with the payload if spawn=True.</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">module_type</span><span class="o">=</span><span class="s2">&quot;canvas&quot;</span><span class="p">,</span>
             <span class="n">instance_id</span><span class="o">=</span><span class="n">instance_id</span><span class="p">,</span>
             <span class="n">spawn</span><span class="o">=</span><span class="n">spawn</span><span class="p">,</span>
-            <span class="n">payload</span><span class="o">=</span><span class="n">spawn_payload</span> <span class="k">if</span> <span class="n">spawn</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="c1"># Send payload only if spawning.</span>
+            <span class="n">payload</span><span class="o">=</span><span class="n">spawn_payload</span> <span class="k">if</span> <span class="n">spawn</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="c1"># Send payload only if spawning</span>
         <span class="p">)</span>
 
-        <span class="c1"># Store dimensions locally for reference (e.g., future validation, though</span>
-        <span class="c1"># currently not used for bounds checking in drawing commands).</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">height</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39; initialized (spawn=</span><span class="si">{</span><span class="n">spawn</span><span class="si">}</span><span class="s2">, size=</span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">height</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">)</span></div>
+        <span class="c1"># --- Store Dimensions Locally ---</span>
+        <span class="c1"># Store dimensions for potential use (e.g., validation, information),</span>
+        <span class="c1"># though drawing commands rely on the UI having the correct size.</span>
+        <span class="c1"># Make them pseudo-read-only by convention (no public setter).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_width</span> <span class="o">=</span> <span class="n">width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_height</span> <span class="o">=</span> <span class="n">height</span>
+
+        <span class="c1"># --- Initialize Callback and Buffer State ---</span>
+        <span class="c1"># Placeholder for the user&#39;s click callback function.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_click_callback</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># Internal state for managing offscreen buffers used by canvas.buffer().</span>
+        <span class="c1"># Key: integer buffer ID (&gt; 0). Value: boolean indicating if currently in use.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_pool</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># Counter to generate unique IDs (starting &gt; 0) for new offscreen buffers.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next_buffer_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="c1"># Lock to protect access to the buffer pool from potential race conditions</span>
+        <span class="c1"># (though typical Sidekick drawing is single-threaded).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39; initialized (spawn=</span><span class="si">{</span><span class="n">spawn</span><span class="si">}</span><span class="s2">, size=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">height</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">)</span></div>
+
+
+    <span class="c1"># --- Read-only Properties for Dimensions ---</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">width</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;int: The width of the canvas in pixels (read-only).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_width</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">height</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;int: The height of the canvas in pixels (read-only).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_height</span>
 
 
     <span class="c1"># --- Internal Message Handling ---</span>
-    <span class="c1"># Inherits _internal_message_handler from BaseModule.</span>
-    <span class="c1"># Currently, the Canvas UI doesn&#39;t send any specific &#39;event&#39; messages back</span>
-    <span class="c1"># (like clicks), so we only need the base class&#39;s error handling.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_internal_message_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles incoming &#39;event&#39; or &#39;error&#39; messages for this canvas. (Internal).</span>
 
-    <span class="c1"># --- Error Callback ---</span>
-    <span class="c1"># Inherits on_error(callback) method from BaseModule. Use this to handle</span>
-    <span class="c1"># potential errors reported by the Canvas UI element.</span>
+<span class="sd">        Overrides the base class method to specifically process &#39;click&#39; events</span>
+<span class="sd">        originating from the canvas UI element. If a click event arrives, it</span>
+<span class="sd">        extracts the (x, y) coordinates from the message payload and, if an</span>
+<span class="sd">        `on_click` callback function has been registered by the user, calls that</span>
+<span class="sd">        function with the coordinates.</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_send_canvas_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal helper to build and send a Canvas &#39;update&#39; command.</span>
-
-<span class="sd">        This automatically adds the required unique `commandId` to the payload</span>
-<span class="sd">        before sending the update.</span>
+<span class="sd">        It delegates to the base class&#39;s handler (`super()._internal_message_handler`)</span>
+<span class="sd">        at the end to ensure standard &#39;error&#39; message processing still occurs.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            action (str): The specific canvas action (e.g., &quot;line&quot;, &quot;rect&quot;, &quot;clear&quot;, &quot;config&quot;).</span>
-<span class="sd">            options (Optional[Dict[str, Any]]): A dictionary containing the parameters</span>
-<span class="sd">                for the action (e.g., coordinates, colors). Keys should be `camelCase`.</span>
-<span class="sd">                Defaults to an empty dictionary if None.</span>
+<span class="sd">            message (Dict[str, Any]): The raw message dictionary received from</span>
+<span class="sd">                the connection manager. Expected keys include &#39;type&#39;, &#39;src&#39; (matching</span>
+<span class="sd">                this instance&#39;s target_id), and &#39;payload&#39;. Payload keys are expected</span>
+<span class="sd">                to be camelCase.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">msg_type</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;payload&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Handle &#39;event&#39; messages specifically</span>
+        <span class="k">if</span> <span class="n">msg_type</span> <span class="o">==</span> <span class="s2">&quot;event&quot;</span><span class="p">:</span>
+            <span class="n">event_type</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;event&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">payload</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="c1"># Check if it&#39;s a &#39;click&#39; event AND if the user has registered a handler.</span>
+            <span class="k">if</span> <span class="n">event_type</span> <span class="o">==</span> <span class="s2">&quot;click&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_click_callback</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c1"># Safely extract integer coordinates from the payload.</span>
+                    <span class="n">x</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                        <span class="c1"># Coordinates are valid, call the user&#39;s registered callback!</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_click_callback</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                         <span class="c1"># Log a warning if coordinates are missing or not integers.</span>
+                         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39; received &#39;click&#39; event with missing/invalid coordinates: </span><span class="si">{</span><span class="n">payload</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="c1"># IMPORTANT: Catch errors *within* the user&#39;s callback function</span>
+                    <span class="c1"># to prevent crashing the library&#39;s background listener thread.</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error occurred inside Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39; on_click callback: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                 <span class="c1"># Log other unhandled event types or if no callback was registered.</span>
+                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39; received unhandled event type &#39;</span><span class="si">{</span><span class="n">event_type</span><span class="si">}</span><span class="s2">&#39; or no click callback registered.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># ALWAYS call the base class handler. This is crucial for processing</span>
+        <span class="c1"># &#39;error&#39; messages sent from the UI related to this specific canvas instance.</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_internal_message_handler</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+    <span class="c1"># --- Callback Registration ---</span>
+<div class="viewcode-block" id="Canvas.on_click">
+<a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.on_click">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="kc">None</span><span class="p">]]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a function to be called when the user clicks on the canvas.</span>
+
+<span class="sd">        When the user clicks anywhere on this canvas&#39;s visible area in the</span>
+<span class="sd">        Sidekick UI panel, the function you provide (`callback`) will be</span>
+<span class="sd">        executed within your running Python script.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            Click events are only triggered by interactions with the main, visible</span>
+<span class="sd">            (onscreen) canvas (buffer ID 0). Clicks are not detected on hidden</span>
+<span class="sd">            offscreen buffers used with `canvas.buffer()`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            callback (Optional[Callable[[int, int], None]]): The function to execute</span>
+<span class="sd">                when a click occurs. This function must accept two integer arguments:</span>
+<span class="sd">                `x` (the horizontal pixel coordinate of the click relative to the</span>
+<span class="sd">                canvas&#39;s left edge, starting at 0) and `y` (the vertical pixel</span>
+<span class="sd">                coordinate relative to the canvas&#39;s top edge, starting at 0).</span>
+<span class="sd">                To remove a previously registered callback, pass `None`.</span>
 
 <span class="sd">        Raises:</span>
-<span class="sd">            SidekickConnectionError (or subclass): If the connection is not ready</span>
-<span class="sd">                or sending fails.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Ensure options payload is at least an empty dict.</span>
-        <span class="n">options_payload</span> <span class="o">=</span> <span class="n">options</span> <span class="ow">or</span> <span class="p">{}</span>
+<span class="sd">            TypeError: If the provided `callback` is not a callable function (or `None`).</span>
 
-        <span class="c1"># Construct the full payload required by the protocol for canvas updates.</span>
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; def draw_dot_on_click(x, y):</span>
+<span class="sd">            ...     print(f&quot;Canvas clicked at ({x}, {y}). Drawing a small circle there.&quot;)</span>
+<span class="sd">            ...     # Draw a small green circle at the click location</span>
+<span class="sd">            ...     canvas.draw_circle(x, y, 5, fill_color=&#39;green&#39;)</span>
+<span class="sd">            ...</span>
+<span class="sd">            &gt;&gt;&gt; canvas = sidekick.Canvas(250, 250)</span>
+<span class="sd">            &gt;&gt;&gt; canvas.on_click(draw_dot_on_click)</span>
+<span class="sd">            &gt;&gt;&gt; print(&quot;Canvas created. Click on the canvas in the Sidekick panel!&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; # Keep the script running to listen for click events</span>
+<span class="sd">            &gt;&gt;&gt; sidekick.run_forever()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">callback</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;The provided on_click callback must be a callable function or None.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Setting on_click callback for canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_click_callback</span> <span class="o">=</span> <span class="n">callback</span></div>
+
+
+    <span class="c1"># --- Error Callback ---</span>
+    <span class="c1"># The `on_error(callback)` method is inherited directly from `BaseModule`.</span>
+    <span class="c1"># Use `canvas.on_error(my_error_handler)` to register a function that</span>
+    <span class="c1"># receives error messages if the Sidekick UI encounters a problem specifically</span>
+    <span class="c1"># related to processing a command for *this* canvas instance (e.g., trying</span>
+    <span class="c1"># to draw with invalid parameters that were missed by local checks, or drawing</span>
+    <span class="c1"># onto a non-existent buffer).</span>
+
+    <span class="c1"># --- Buffer Management Methods ---</span>
+<div class="viewcode-block" id="Canvas.buffer">
+<a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.buffer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ContextManager</span><span class="p">[</span><span class="n">_CanvasBufferProxy</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Provides a context manager (`with` statement) for efficient double buffering.</span>
+
+<span class="sd">        Using this method enables double buffering, the standard technique for</span>
+<span class="sd">        creating smooth, flicker-free animations or complex drawing sequences.</span>
+<span class="sd">        Instead of drawing directly to the visible screen (which can cause tearing</span>
+<span class="sd">        or flickering as elements are drawn one by one), you draw everything for</span>
+<span class="sd">        the next frame onto a hidden (offscreen) buffer. When you&#39;re finished</span>
+<span class="sd">        drawing the frame, the entire content of the hidden buffer is copied to</span>
+<span class="sd">        the visible screen in one go.</span>
+
+<span class="sd">        How it works in practice:</span>
+
+<span class="sd">        1.  **Enter `with` block:** `with canvas.buffer() as buf:`</span>
+<span class="sd">            *   An offscreen buffer is acquired (or created/reused).</span>
+<span class="sd">            *   This buffer is automatically cleared.</span>
+<span class="sd">            *   The variable `buf` becomes a proxy object that mirrors the canvas&#39;s</span>
+<span class="sd">                drawing methods (e.g., `buf.draw_line()`).</span>
+<span class="sd">        2.  **Inside `with` block:**</span>
+<span class="sd">            *   All drawing commands called on `buf` (e.g., `buf.draw_circle(...)`)</span>
+<span class="sd">                are sent to the *hidden* offscreen buffer. The visible screen remains</span>
+<span class="sd">                unchanged during this time.</span>
+<span class="sd">        3.  **Exit `with` block:**</span>
+<span class="sd">            *   The visible canvas is automatically cleared.</span>
+<span class="sd">            *   The *entire* content of the hidden buffer is drawn (&quot;blitted&quot;) onto</span>
+<span class="sd">                the visible canvas in a single, fast operation.</span>
+<span class="sd">            *   The hidden buffer is released back into an internal pool so it can</span>
+<span class="sd">                be reused efficiently next time you enter a `buffer()` context.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ContextManager[_CanvasBufferProxy]: An object designed to be used in a</span>
+<span class="sd">            `with` statement. The object yielded by the `with` statement (`buf` in</span>
+<span class="sd">            the example) provides the drawing methods that target the hidden buffer.</span>
+
+<span class="sd">        Example (Simple Animation):</span>
+<span class="sd">            &gt;&gt;&gt; import sidekick, time, math</span>
+<span class="sd">            &gt;&gt;&gt; canvas = sidekick.Canvas(150, 100)</span>
+<span class="sd">            &gt;&gt;&gt; x_pos = 10</span>
+<span class="sd">            &gt;&gt;&gt; for frame in range(50):</span>
+<span class="sd">            ...     with canvas.buffer() as frame_buffer: # Get the hidden buffer proxy</span>
+<span class="sd">            ...         # Draw background (optional, buffer starts clear)</span>
+<span class="sd">            ...         # frame_buffer.draw_rect(0, 0, canvas.width, canvas.height, fill_color=&#39;lightblue&#39;)</span>
+<span class="sd">            ...         # Draw moving element on the hidden buffer</span>
+<span class="sd">            ...         frame_buffer.draw_circle(x_pos, 50, 10, fill_color=&#39;red&#39;)</span>
+<span class="sd">            ...         frame_buffer.draw_text(5, 15, f&quot;Frame: {frame}&quot;)</span>
+<span class="sd">            ...     # --- Screen automatically updates here when &#39;with&#39; block ends ---</span>
+<span class="sd">            ...     x_pos += 2 # Move for next frame</span>
+<span class="sd">            ...     time.sleep(0.03) # Control animation speed</span>
+<span class="sd">            &gt;&gt;&gt; print(&quot;Animation finished.&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Returns an instance of the internal context manager class.</span>
+        <span class="k">return</span> <span class="n">_CanvasBufferContextManager</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_acquire_buffer_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal: Gets an available offscreen buffer ID from the pool or creates one.</span>
+
+<span class="sd">        Checks the internal `_buffer_pool` for an existing buffer ID that is not</span>
+<span class="sd">        currently in use. If none is found, it generates a new unique ID (starting &gt; 0),</span>
+<span class="sd">        sends a &#39;createBuffer&#39; command to the Sidekick UI to instantiate the</span>
+<span class="sd">        corresponding offscreen canvas element, adds the new ID to the pool, marks</span>
+<span class="sd">        it as in use, and returns it.</span>
+
+<span class="sd">        Note: This assumes the caller handles potential connection errors raised</span>
+<span class="sd">        when sending the &#39;createBuffer&#39; command.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: The ID (&gt; 0) of an available offscreen buffer, marked as &#39;in use&#39;.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            SidekickConnectionError (or subclass): If sending the &#39;createBuffer&#39;</span>
+<span class="sd">                command fails when creating a new buffer.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Use a lock to ensure thread-safe access/modification of the shared buffer pool.</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_lock</span><span class="p">:</span>
+            <span class="c1"># Check if an existing, currently unused buffer is available in the pool.</span>
+            <span class="k">for</span> <span class="n">buffer_id</span><span class="p">,</span> <span class="n">is_in_use</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_pool</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">is_in_use</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_pool</span><span class="p">[</span><span class="n">buffer_id</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span> <span class="c1"># Mark as now in use</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Reusing buffer ID </span><span class="si">{</span><span class="n">buffer_id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">buffer_id</span> <span class="c1"># Return the existing ID</span>
+
+            <span class="c1"># No unused buffer found, need to create a new one.</span>
+            <span class="c1"># Get the next available ID from the internal counter.</span>
+            <span class="n">new_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next_buffer_id</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_next_buffer_id</span> <span class="o">+=</span> <span class="mi">1</span> <span class="c1"># Increment counter for the future.</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: No reusable buffer found. Creating new buffer with ID </span><span class="si">{</span><span class="n">new_id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Send the &#39;createBuffer&#39; command to the Sidekick UI.</span>
+            <span class="c1"># Payload requires &#39;bufferId&#39; key (camelCase) in options.</span>
+            <span class="c1"># This call might raise SidekickConnectionError if sending fails.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_update</span><span class="p">(</span>
+                <span class="n">action</span><span class="o">=</span><span class="s2">&quot;createBuffer&quot;</span><span class="p">,</span>
+                <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;bufferId&quot;</span><span class="p">:</span> <span class="n">new_id</span><span class="p">}</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Add the new buffer ID to our pool and mark it as currently in use.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_pool</span><span class="p">[</span><span class="n">new_id</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">return</span> <span class="n">new_id</span> <span class="c1"># Return the newly created ID</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_release_buffer_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffer_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal: Marks an offscreen buffer ID as no longer in use in the pool.</span>
+
+<span class="sd">        Called by the `_CanvasBufferContextManager`&#39;s `__exit__` method. It updates</span>
+<span class="sd">        the internal `_buffer_pool` to indicate that the specified buffer ID is now</span>
+<span class="sd">        available for potential reuse by a future call to `_acquire_buffer_id`.</span>
+
+<span class="sd">        Note: This does *not* send a &#39;destroyBuffer&#39; command to the UI. Offscreen</span>
+<span class="sd">        buffers are kept alive in the UI for potential reuse to improve performance,</span>
+<span class="sd">        unless the entire canvas module instance is removed via `canvas.remove()`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            buffer_id (int): The ID (&gt; 0) of the offscreen buffer to release back</span>
+<span class="sd">                             into the pool (mark as not in use).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Use the lock for thread-safe modification of the shared pool dictionary.</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">buffer_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_pool</span><span class="p">:</span>
+                <span class="c1"># Mark the buffer as available for reuse.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_pool</span><span class="p">[</span><span class="n">buffer_id</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Released buffer ID </span><span class="si">{</span><span class="n">buffer_id</span><span class="si">}</span><span class="s2"> back to pool.&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># This might happen if release is called improperly (e.g., wrong ID)</span>
+                <span class="c1"># or perhaps after the canvas has already been removed.</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Attempted to release buffer ID </span><span class="si">{</span><span class="n">buffer_id</span><span class="si">}</span><span class="s2">, but it was not found in the active pool.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_send_draw_buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source_buffer_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target_buffer_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal: Sends the command to draw the content of one buffer onto another.</span>
+
+<span class="sd">        This is primarily used by the `_CanvasBufferContextManager.__exit__` method</span>
+<span class="sd">        to implement the double buffering &quot;flip&quot; – drawing the completed offscreen</span>
+<span class="sd">        buffer (source) onto the visible onscreen buffer (target).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            source_buffer_id (int): The ID of the buffer to copy content *from*.</span>
+<span class="sd">            target_buffer_id (int): The ID of the buffer to draw content *onto*.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            SidekickConnectionError (or subclass): If sending the command fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Prepare the payload with camelCase keys according to the protocol.</span>
+        <span class="c1"># This call might raise SidekickConnectionError if sending fails.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_update</span><span class="p">(</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">&quot;drawBuffer&quot;</span><span class="p">,</span>
+            <span class="n">options</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;sourceBufferId&quot;</span><span class="p">:</span> <span class="n">source_buffer_id</span><span class="p">,</span>
+                <span class="s2">&quot;targetBufferId&quot;</span><span class="p">:</span> <span class="n">target_buffer_id</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+    <span class="c1"># --- Internal Command Helper ---</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_send_canvas_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal helper to construct and send a standard Canvas &#39;update&#39; command payload.</span>
+
+<span class="sd">        Takes the canvas-specific action name (e.g., &quot;drawLine&quot;, &quot;drawRect&quot;) and</span>
+<span class="sd">        its associated options dictionary, wraps them into the standard &#39;update&#39;</span>
+<span class="sd">        payload structure required by the protocol, and sends the message using</span>
+<span class="sd">        the base class&#39;s `_send_update` method.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            action (str): The specific canvas action being performed (e.g., &quot;drawLine&quot;,</span>
+<span class="sd">                &quot;clear&quot;, &quot;drawRect&quot;). This becomes the `action` field in the payload.</span>
+<span class="sd">            options (Dict[str, Any]): A dictionary containing the parameters specific</span>
+<span class="sd">                to the action (e.g., coordinates, colors, text). Keys within this</span>
+<span class="sd">                dictionary **must already be `camelCase`** as required by the protocol</span>
+<span class="sd">                (e.g., `lineColor`, `fillColor`, `bufferId`). This dictionary becomes</span>
+<span class="sd">                the `options` field nested within the main payload.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            SidekickConnectionError (or subclass): If the underlying `_send_update`</span>
+<span class="sd">                call fails (e.g., connection lost).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Construct the final payload structure expected by the UI for canvas updates.</span>
         <span class="n">update_payload</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
-            <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="n">options_payload</span><span class="p">,</span>
-            <span class="c1"># Get the next sequential ID for this specific drawing command.</span>
-            <span class="s2">&quot;commandId&quot;</span><span class="p">:</span> <span class="n">connection</span><span class="o">.</span><span class="n">get_next_command_id</span><span class="p">()</span>
+            <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="n">options</span><span class="p">,</span> <span class="c1"># Assumes &#39;options&#39; keys are already camelCase</span>
         <span class="p">}</span>
-        <span class="c1"># Use the base class&#39;s method to send the &#39;update&#39; command.</span>
+        <span class="c1"># Delegate the actual sending and connection checks to the base class method.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_send_update</span><span class="p">(</span><span class="n">update_payload</span><span class="p">)</span>
 
-    <span class="c1"># --- Public Canvas Methods ---</span>
+    <span class="c1"># --- Public Drawing Methods ---</span>
 
 <div class="viewcode-block" id="Canvas.clear">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.clear">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clears the entire canvas, optionally filling it with a background color.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffer_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clears the specified canvas buffer (visible screen or an offscreen buffer).</span>
 
-<span class="sd">        Removes all previously drawn shapes.</span>
+<span class="sd">        Erases all previously drawn shapes, lines, and text from the target buffer,</span>
+<span class="sd">        resetting it to a blank state (typically transparent or a default background</span>
+<span class="sd">        color determined by the UI theme).</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            color (Optional[str]): A CSS color string (e.g., &#39;white&#39;, &#39;#ff0000&#39;)</span>
-<span class="sd">                to fill the canvas with after clearing. If None (default), the</span>
-<span class="sd">                canvas will usually revert to its initial background color or</span>
-<span class="sd">                become transparent, depending on the Sidekick UI implementation.</span>
+<span class="sd">            buffer_id (Optional[int]): The ID of the buffer to clear.</span>
+<span class="sd">                - If `None` (default) or `0`, clears the main visible (onscreen) canvas.</span>
+<span class="sd">                - If a positive integer corresponding to an offscreen buffer (usually</span>
+<span class="sd">                  obtained implicitly via `canvas.buffer()`), clears that specific</span>
+<span class="sd">                  hidden buffer.</span>
 
-<span class="sd">        Returns:</span>
-<span class="sd">            None</span>
+<span class="sd">        Raises:</span>
+<span class="sd">            SidekickConnectionError (or subclass): If sending the command fails.</span>
 
 <span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; # Clear the canvas (reverts to default background)</span>
+<span class="sd">            &gt;&gt;&gt; canvas = sidekick.Canvas(100, 50)</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_rect(10, 10, 30, 30, fill_color=&#39;red&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; # Clear the main visible canvas</span>
 <span class="sd">            &gt;&gt;&gt; canvas.clear()</span>
 <span class="sd">            &gt;&gt;&gt;</span>
-<span class="sd">            &gt;&gt;&gt; # Clear the canvas and make the background blue</span>
-<span class="sd">            &gt;&gt;&gt; canvas.clear(color=&quot;blue&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; # Example within double buffering: Clear the offscreen buffer</span>
+<span class="sd">            &gt;&gt;&gt; with canvas.buffer() as buf:</span>
+<span class="sd">            ...     # buf implicitly refers to an offscreen buffer</span>
+<span class="sd">            ...     # To clear *that* specific buffer (e.g., at start of frame drawing):</span>
+<span class="sd">            ...     buf.clear() # This calls canvas.clear(buffer_id=buf._buffer_id) internally</span>
+<span class="sd">            ...     buf.draw_circle(50, 25, 10) # Draw new content</span>
+<span class="sd">            ... # On exit, screen is cleared, then buffer is drawn.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">options</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="c1"># Only include the color option if one was provided.</span>
-        <span class="k">if</span> <span class="n">color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">options</span><span class="p">[</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">color</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_command</span><span class="p">(</span><span class="s2">&quot;clear&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Sent clear command (color=</span><span class="si">{</span><span class="n">color</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">)</span></div>
+        <span class="c1"># Determine the target buffer ID, defaulting to the onscreen buffer (0) if None.</span>
+        <span class="n">target_buffer_id</span> <span class="o">=</span> <span class="n">buffer_id</span> <span class="k">if</span> <span class="n">buffer_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">ONSCREEN_BUFFER_ID</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Sending &#39;clear&#39; command for buffer ID </span><span class="si">{</span><span class="n">target_buffer_id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 
-
-<div class="viewcode-block" id="Canvas.config">
-<a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.config">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">stroke_style</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">fill_style</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">line_width</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configures the drawing styles for *subsequent* shape drawing commands.</span>
-
-<span class="sd">        Use this to set the color for outlines (`stroke_style`), the color used</span>
-<span class="sd">        for filling shapes (`fill_style`), and the thickness of lines (`line_width`).</span>
-<span class="sd">        Any style parameter you set here will remain active for all future drawing</span>
-<span class="sd">        calls until you change it again using `config()`.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            stroke_style (Optional[str]): The color for drawing lines and shape</span>
-<span class="sd">                outlines (e.g., &#39;black&#39;, &#39;#00FF00&#39;, &#39;rgba(0,0,255,0.8)&#39;). If None,</span>
-<span class="sd">                the current stroke style is not changed.</span>
-<span class="sd">            fill_style (Optional[str]): The color for filling shapes (rectangles,</span>
-<span class="sd">                circles) when the `filled` parameter is True in drawing commands</span>
-<span class="sd">                (e.g., &#39;blue&#39;, &#39;#FFFF00&#39;). If None, the current fill style is</span>
-<span class="sd">                not changed.</span>
-<span class="sd">            line_width (Optional[int]): The width (thickness) of lines and shape</span>
-<span class="sd">                outlines in pixels. Must be a positive integer. If None, the</span>
-<span class="sd">                current line width is not changed.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            None</span>
-
-<span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; # Set drawing color to red, fill to yellow, line width to 3 pixels</span>
-<span class="sd">            &gt;&gt;&gt; canvas.config(stroke_style=&quot;red&quot;, fill_style=&quot;yellow&quot;, line_width=3)</span>
-<span class="sd">            &gt;&gt;&gt; # Now draw a filled red rectangle (uses the new styles)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.draw_rect(10, 10, 50, 50, filled=True) # Outline red, fill yellow</span>
-<span class="sd">            &gt;&gt;&gt;</span>
-<span class="sd">            &gt;&gt;&gt; # Only change the line width back to 1 (stroke and fill remain)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.config(line_width=1)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">options</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="c1"># Build the options dictionary, only including parameters that were provided.</span>
-        <span class="c1"># Keys must be camelCase.</span>
-        <span class="k">if</span> <span class="n">stroke_style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;strokeStyle&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stroke_style</span>
-        <span class="k">if</span> <span class="n">fill_style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;fillStyle&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fill_style</span>
-        <span class="k">if</span> <span class="n">line_width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line_width</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">line_width</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineWidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_width</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Invalid line_width (</span><span class="si">{</span><span class="n">line_width</span><span class="si">}</span><span class="s2">) in config. Must be positive integer. Ignoring.&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Only send the command if there&#39;s actually something to configure.</span>
-        <span class="k">if</span> <span class="n">options</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_command</span><span class="p">(</span><span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Sent config command: </span><span class="si">{</span><span class="n">options</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: config() called with no styles to change.&quot;</span><span class="p">)</span></div>
+        <span class="c1"># Prepare options dictionary with camelCase key.</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;bufferId&quot;</span><span class="p">:</span> <span class="n">target_buffer_id</span><span class="p">}</span>
+        <span class="c1"># Send the command using the internal helper. Raises on connection error.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_update</span><span class="p">(</span><span class="s2">&quot;clear&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Canvas.draw_line">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.draw_line">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">draw_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">x2</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y2</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a straight line segment on the canvas.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">x2</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y2</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                  <span class="n">line_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">line_width</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">buffer_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a straight line segment between two points on the specified buffer.</span>
 
-<span class="sd">        The line is drawn using the current `stroke_style` and `line_width`</span>
-<span class="sd">        set by the last call to `config()`. The coordinate system origin (0,0)</span>
-<span class="sd">        is typically the top-left corner of the canvas.</span>
+<span class="sd">        Connects the start point `(x1, y1)` to the end point `(x2, y2)`.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            x1 (int): The x-coordinate (horizontal position) of the line&#39;s start point.</span>
-<span class="sd">            y1 (int): The y-coordinate (vertical position) of the line&#39;s start point.</span>
+<span class="sd">            x1 (int): The x-coordinate (pixels from left) of the line&#39;s start point.</span>
+<span class="sd">            y1 (int): The y-coordinate (pixels from top) of the line&#39;s start point.</span>
 <span class="sd">            x2 (int): The x-coordinate of the line&#39;s end point.</span>
 <span class="sd">            y2 (int): The y-coordinate of the line&#39;s end point.</span>
+<span class="sd">            line_color (Optional[str]): The color of the line. Accepts standard CSS</span>
+<span class="sd">                color formats (e.g., &#39;black&#39;, &#39;#FF0000&#39;, &#39;rgb(0, 255, 0)&#39;,</span>
+<span class="sd">                &#39;hsl(120, 100%, 50%)&#39;). If `None`, the Sidekick UI&#39;s default line</span>
+<span class="sd">                color (usually determined by the theme) is used.</span>
+<span class="sd">            line_width (Optional[int]): The thickness of the line in pixels. Must be</span>
+<span class="sd">                a positive integer (e.g., 1, 2, 3...). If `None`, the UI&#39;s default</span>
+<span class="sd">                line width (typically 1 pixel) is used.</span>
+<span class="sd">            buffer_id (Optional[int]): The target buffer ID. Defaults to `None`, which</span>
+<span class="sd">                targets the main visible (onscreen) canvas (ID 0). When used inside</span>
+<span class="sd">                `with canvas.buffer() as buf:`, drawing methods on `buf` automatically</span>
+<span class="sd">                target the correct offscreen buffer ID.</span>
 
-<span class="sd">        Returns:</span>
-<span class="sd">            None</span>
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If `line_width` is provided but is not a positive integer.</span>
+<span class="sd">            SidekickConnectionError (or subclass): If sending the command fails.</span>
 
-<span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; # Draw a diagonal line from (10, 10) to (50, 100)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.draw_line(10, 10, 50, 100)</span>
-<span class="sd">            &gt;&gt;&gt;</span>
-<span class="sd">            &gt;&gt;&gt; # Draw a horizontal line</span>
-<span class="sd">            &gt;&gt;&gt; canvas.draw_line(20, 50, 80, 50)</span>
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; canvas = sidekick.Canvas(150, 150)</span>
+<span class="sd">            &gt;&gt;&gt; # Draw line with default color/width from (10, 20) to (100, 120)</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_line(10, 20, 100, 120)</span>
+<span class="sd">            &gt;&gt;&gt; # Draw a thicker, blue line</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_line(20, 30, 110, 130, line_color=&#39;blue&#39;, line_width=3)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Coordinates must be camelCase in the options payload.</span>
-        <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;x1&quot;</span><span class="p">:</span> <span class="n">x1</span><span class="p">,</span> <span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="n">y1</span><span class="p">,</span> <span class="s2">&quot;x2&quot;</span><span class="p">:</span> <span class="n">x2</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="n">y2</span><span class="p">}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_command</span><span class="p">(</span><span class="s2">&quot;line&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+        <span class="c1"># Determine target buffer ID.</span>
+        <span class="n">target_buffer_id</span> <span class="o">=</span> <span class="n">buffer_id</span> <span class="k">if</span> <span class="n">buffer_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">ONSCREEN_BUFFER_ID</span>
 
-        <span class="c1"># Consider adding logging here if needed for debugging draws.</span>
+        <span class="c1"># Prepare the options dictionary for the payload.</span>
+        <span class="c1"># Keys *must* be camelCase for the communication protocol.</span>
+        <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;bufferId&quot;</span><span class="p">:</span> <span class="n">target_buffer_id</span><span class="p">,</span>
+            <span class="s2">&quot;x1&quot;</span><span class="p">:</span> <span class="n">x1</span><span class="p">,</span> <span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="n">y1</span><span class="p">,</span> <span class="s2">&quot;x2&quot;</span><span class="p">:</span> <span class="n">x2</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="n">y2</span>
+        <span class="p">}</span>
+        <span class="c1"># Add optional style parameters only if they are explicitly provided.</span>
+        <span class="k">if</span> <span class="n">line_color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+             <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineColor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_color</span> <span class="c1"># camelCase key for protocol</span>
+        <span class="k">if</span> <span class="n">line_width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Validate line_width locally before sending.</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line_width</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">line_width</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineWidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_width</span> <span class="c1"># camelCase key for protocol</span>
+            <span class="k">else</span><span class="p">:</span>
+                 <span class="c1"># Log a warning or raise an error for invalid input. Raising ValueError is stricter.</span>
+                 <span class="c1"># logger.warning(f&quot;Canvas &#39;{self.target_id}&#39;: Invalid line_width ({line_width}) provided to draw_line. Must be positive int. Ignoring.&quot;)</span>
+                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;line_width must be a positive integer.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Send the command. Raises on connection error.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_update</span><span class="p">(</span><span class="s2">&quot;drawLine&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+
 
 <div class="viewcode-block" id="Canvas.draw_rect">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.draw_rect">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">draw_rect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">filled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a rectangle on the canvas.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_rect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                  <span class="n">fill_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">line_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">line_width</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">buffer_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a rectangle on the specified buffer.</span>
+
+<span class="sd">        The rectangle is defined by its top-left corner coordinates `(x, y)` and</span>
+<span class="sd">        its `width` and `height`.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            x (int): The x-coordinate of the top-left corner of the rectangle.</span>
-<span class="sd">            y (int): The y-coordinate of the top-left corner of the rectangle.</span>
+<span class="sd">            x (int): The x-coordinate of the top-left corner.</span>
+<span class="sd">            y (int): The y-coordinate of the top-left corner.</span>
 <span class="sd">            width (int): The width of the rectangle in pixels. Should be non-negative.</span>
+<span class="sd">                         (A width of 0 might not be visible).</span>
 <span class="sd">            height (int): The height of the rectangle in pixels. Should be non-negative.</span>
-<span class="sd">            filled (bool): Determines how the rectangle is drawn:</span>
-<span class="sd">                - If `False` (default): Draws only the outline of the rectangle using</span>
-<span class="sd">                  the current `stroke_style` and `line_width`.</span>
-<span class="sd">                - If `True`: Fills the rectangle with the current `fill_style`</span>
-<span class="sd">                  *and* also draws the outline using the `stroke_style` and `line_width`.</span>
+<span class="sd">                          (A height of 0 might not be visible).</span>
+<span class="sd">            fill_color (Optional[str]): The color to fill the inside of the rectangle.</span>
+<span class="sd">                Accepts CSS color formats. If `None` (default), the rectangle will</span>
+<span class="sd">                not be filled (its interior will be transparent).</span>
+<span class="sd">            line_color (Optional[str]): The color of the rectangle&#39;s outline (border).</span>
+<span class="sd">                If `None` (default), the UI&#39;s default outline color is used. If you</span>
+<span class="sd">                don&#39;t want an outline, you might need to set `line_width` to 0 or</span>
+<span class="sd">                `line_color` to the same as `fill_color` or a transparent color,</span>
+<span class="sd">                depending on the desired effect and UI behavior.</span>
+<span class="sd">            line_width (Optional[int]): The thickness of the outline in pixels. Must</span>
+<span class="sd">                be positive if an outline is desired. If `None` (default), the UI&#39;s</span>
+<span class="sd">                default outline width (typically 1 pixel) is used. A `line_width` of 0</span>
+<span class="sd">                usually means no outline is drawn.</span>
+<span class="sd">            buffer_id (Optional[int]): The target buffer ID. Defaults to `None`</span>
+<span class="sd">                (targets the visible onscreen canvas, ID 0).</span>
 
-<span class="sd">        Returns:</span>
-<span class="sd">            None</span>
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If `line_width` is provided but is not a non-negative integer,</span>
+<span class="sd">                        or if `width` or `height` are negative.</span>
+<span class="sd">            SidekickConnectionError (or subclass): If sending the command fails.</span>
 
-<span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; # Draw the outline of a 50x30 rectangle starting at (20, 20)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.config(stroke_style=&#39;blue&#39;)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.draw_rect(20, 20, 50, 30)</span>
-<span class="sd">            &gt;&gt;&gt;</span>
-<span class="sd">            &gt;&gt;&gt; # Draw a filled red rectangle (outline still uses stroke_style)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.config(fill_style=&quot;red&quot;)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.draw_rect(100, 50, 40, 40, filled=True)</span>
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; canvas = sidekick.Canvas(200, 150)</span>
+<span class="sd">            &gt;&gt;&gt; # Draw an empty rectangle with a 2px red border</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_rect(10, 10, 50, 80, line_color=&#39;red&#39;, line_width=2)</span>
+<span class="sd">            &gt;&gt;&gt; # Draw a filled green rectangle with the default 1px border</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_rect(70, 30, 40, 40, fill_color=&#39;green&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; # Draw a filled yellow rectangle with effectively no border</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_rect(120, 50, 30, 30, fill_color=&#39;yellow&#39;, line_width=0)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Log a warning if dimensions are negative, but still send the command</span>
-        <span class="c1"># as the UI might handle it (e.g., by drawing nothing or using absolute value).</span>
-        <span class="k">if</span> <span class="n">width</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">height</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                 <span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: draw_rect called with negative width/height &quot;</span>
-                 <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">height</span><span class="si">}</span><span class="s2">). Behavior depends on Sidekick UI implementation.&quot;</span>
-             <span class="p">)</span>
-        <span class="c1"># Keys must be camelCase.</span>
-        <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span> <span class="s2">&quot;width&quot;</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span> <span class="s2">&quot;height&quot;</span><span class="p">:</span> <span class="n">height</span><span class="p">,</span> <span class="s2">&quot;filled&quot;</span><span class="p">:</span> <span class="n">filled</span><span class="p">}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_command</span><span class="p">(</span><span class="s2">&quot;rect&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+        <span class="c1"># Determine target buffer ID.</span>
+        <span class="n">target_buffer_id</span> <span class="o">=</span> <span class="n">buffer_id</span> <span class="k">if</span> <span class="n">buffer_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">ONSCREEN_BUFFER_ID</span>
+
+        <span class="c1"># Basic validation for size and line width.</span>
+        <span class="k">if</span> <span class="n">width</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Rectangle width cannot be negative.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">height</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Rectangle height cannot be negative.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Prepare options dictionary with camelCase keys.</span>
+        <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;bufferId&quot;</span><span class="p">:</span> <span class="n">target_buffer_id</span><span class="p">,</span>
+            <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span> <span class="s2">&quot;width&quot;</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span> <span class="s2">&quot;height&quot;</span><span class="p">:</span> <span class="n">height</span>
+        <span class="p">}</span>
+        <span class="c1"># Add optional style parameters if provided.</span>
+        <span class="k">if</span> <span class="n">fill_color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;fillColor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fill_color</span>
+        <span class="k">if</span> <span class="n">line_color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineColor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_color</span>
+        <span class="k">if</span> <span class="n">line_width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Allow line_width of 0 to mean &quot;no line&quot;.</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line_width</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">line_width</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineWidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_width</span>
+            <span class="k">else</span><span class="p">:</span>
+                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;line_width must be a non-negative integer.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Send the command. Raises on connection error.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_update</span><span class="p">(</span><span class="s2">&quot;drawRect&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Canvas.draw_circle">
 <a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.draw_circle">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">draw_circle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">cy</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">filled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a circle on the canvas.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_circle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">cy</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                    <span class="n">fill_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">line_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">line_width</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">buffer_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a circle on the specified buffer.</span>
+
+<span class="sd">        The circle is defined by its center coordinates `(cx, cy)` and its `radius`.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            cx (int): The x-coordinate of the center of the circle.</span>
 <span class="sd">            cy (int): The y-coordinate of the center of the circle.</span>
 <span class="sd">            radius (int): The radius of the circle in pixels. Must be positive.</span>
-<span class="sd">            filled (bool): Determines how the circle is drawn:</span>
-<span class="sd">                - If `False` (default): Draws only the outline (circumference)</span>
-<span class="sd">                  using the current `stroke_style` and `line_width`.</span>
-<span class="sd">                - If `True`: Fills the circle with the current `fill_style`</span>
-<span class="sd">                  *and* also draws the outline using the `stroke_style` and `line_width`.</span>
+<span class="sd">            fill_color (Optional[str]): The color to fill the inside of the circle.</span>
+<span class="sd">                Accepts CSS color formats. If `None` (default), the circle is not filled.</span>
+<span class="sd">            line_color (Optional[str]): The color of the circle&#39;s outline.</span>
+<span class="sd">                If `None` (default), the UI&#39;s default outline color is used.</span>
+<span class="sd">            line_width (Optional[int]): The thickness of the outline in pixels.</span>
+<span class="sd">                Must be positive if an outline is desired. If `None` (default), the UI&#39;s</span>
+<span class="sd">                default outline width (typically 1 pixel) is used. Use 0 for no outline.</span>
+<span class="sd">            buffer_id (Optional[int]): The target buffer ID. Defaults to `None`</span>
+<span class="sd">                (targets the visible onscreen canvas, ID 0).</span>
 
 <span class="sd">        Raises:</span>
-<span class="sd">            ValueError: If `radius` is zero or negative.</span>
+<span class="sd">            ValueError: If `radius` is not positive, or if `line_width` is provided</span>
+<span class="sd">                        but is not a non-negative integer.</span>
+<span class="sd">            SidekickConnectionError (or subclass): If sending the command fails.</span>
 
-<span class="sd">        Returns:</span>
-<span class="sd">            None</span>
-
-<span class="sd">        Examples:</span>
-<span class="sd">            &gt;&gt;&gt; # Draw the outline of a circle with radius 25 centered at (150, 100)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.config(stroke_style=&#39;green&#39;, line_width=2)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.draw_circle(150, 100, 25)</span>
-<span class="sd">            &gt;&gt;&gt;</span>
-<span class="sd">            &gt;&gt;&gt; # Draw a filled orange circle</span>
-<span class="sd">            &gt;&gt;&gt; canvas.config(fill_style=&quot;orange&quot;)</span>
-<span class="sd">            &gt;&gt;&gt; canvas.draw_circle(50, 50, 20, filled=True)</span>
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; canvas = sidekick.Canvas(250, 150)</span>
+<span class="sd">            &gt;&gt;&gt; # Draw a filled red circle</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_circle(50, 75, 40, fill_color=&#39;red&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; # Draw an empty circle with a thick blue outline</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_circle(150, 75, 30, line_color=&#39;blue&#39;, line_width=4)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Radius must be positive for a circle to be drawn.</span>
-        <span class="k">if</span> <span class="n">radius</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-             <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: draw_circle radius must be positive, got </span><span class="si">{</span><span class="n">radius</span><span class="si">}</span><span class="s2">.&quot;</span>
-             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s2">&quot; Ignoring command.&quot;</span><span class="p">)</span>
-             <span class="c1"># Raise ValueError to make the error explicit to the user.</span>
-             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-        <span class="c1"># Keys must be camelCase.</span>
-        <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cx&quot;</span><span class="p">:</span> <span class="n">cx</span><span class="p">,</span> <span class="s2">&quot;cy&quot;</span><span class="p">:</span> <span class="n">cy</span><span class="p">,</span> <span class="s2">&quot;radius&quot;</span><span class="p">:</span> <span class="n">radius</span><span class="p">,</span> <span class="s2">&quot;filled&quot;</span><span class="p">:</span> <span class="n">filled</span><span class="p">}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_command</span><span class="p">(</span><span class="s2">&quot;circle&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+        <span class="c1"># Determine target buffer ID.</span>
+        <span class="n">target_buffer_id</span> <span class="o">=</span> <span class="n">buffer_id</span> <span class="k">if</span> <span class="n">buffer_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">ONSCREEN_BUFFER_ID</span>
+
+        <span class="c1"># Validate radius.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">radius</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">or</span> <span class="n">radius</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Circle radius must be a positive number.&quot;</span><span class="p">)</span>
+        <span class="c1"># Ensure radius is int for payload if it was float.</span>
+        <span class="n">radius_int</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span>
+
+        <span class="c1"># Prepare options dictionary with camelCase keys.</span>
+        <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;bufferId&quot;</span><span class="p">:</span> <span class="n">target_buffer_id</span><span class="p">,</span>
+            <span class="s2">&quot;cx&quot;</span><span class="p">:</span> <span class="n">cx</span><span class="p">,</span> <span class="s2">&quot;cy&quot;</span><span class="p">:</span> <span class="n">cy</span><span class="p">,</span> <span class="s2">&quot;radius&quot;</span><span class="p">:</span> <span class="n">radius_int</span>
+        <span class="p">}</span>
+        <span class="c1"># Add optional style parameters if provided.</span>
+        <span class="k">if</span> <span class="n">fill_color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;fillColor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fill_color</span>
+        <span class="k">if</span> <span class="n">line_color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineColor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_color</span>
+        <span class="k">if</span> <span class="n">line_width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line_width</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">line_width</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineWidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_width</span>
+            <span class="k">else</span><span class="p">:</span>
+                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;line_width must be a non-negative integer.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Send the command. Raises on connection error.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_update</span><span class="p">(</span><span class="s2">&quot;drawCircle&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Canvas.draw_polyline">
+<a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.draw_polyline">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_polyline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">PointList</span><span class="p">,</span>
+                      <span class="n">line_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="n">line_width</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="n">buffer_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a series of connected line segments (an open path) on the specified buffer.</span>
+
+<span class="sd">        Connects the points in the order they appear in the `points` list using</span>
+<span class="sd">        straight lines. It&#39;s an &quot;open&quot; path because, unlike `draw_polygon`, it</span>
+<span class="sd">        does not automatically draw a line connecting the last point back to the first.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            points (List[Tuple[int, int]]): A list containing at least two vertex</span>
+<span class="sd">                tuples, where each tuple `(x, y)` represents the integer coordinates</span>
+<span class="sd">                of a corner point of the polyline.</span>
+<span class="sd">            line_color (Optional[str]): The color for all line segments in the polyline.</span>
+<span class="sd">                Uses UI default if `None`.</span>
+<span class="sd">            line_width (Optional[int]): The thickness for all line segments in pixels.</span>
+<span class="sd">                Must be positive. Uses UI default (typically 1) if `None`.</span>
+<span class="sd">            buffer_id (Optional[int]): The target buffer ID. Defaults to `None`</span>
+<span class="sd">                (targets the visible onscreen canvas, ID 0).</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If `points` contains fewer than two points, or if `line_width`</span>
+<span class="sd">                        is provided but is not positive.</span>
+<span class="sd">            TypeError: If `points` is not a list or contains non-tuple/non-numeric elements.</span>
+<span class="sd">            SidekickConnectionError (or subclass): If sending the command fails.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; canvas = sidekick.Canvas(200, 100)</span>
+<span class="sd">            &gt;&gt;&gt; # Draw a &#39;W&#39; shape</span>
+<span class="sd">            &gt;&gt;&gt; w_shape_points = [(20, 80), (40, 20), (60, 80), (80, 20), (100, 80)]</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_polyline(w_shape_points, line_color=&#39;purple&#39;, line_width=3)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Determine target buffer ID.</span>
+        <span class="n">target_buffer_id</span> <span class="o">=</span> <span class="n">buffer_id</span> <span class="k">if</span> <span class="n">buffer_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">ONSCREEN_BUFFER_ID</span>
+
+        <span class="c1"># Validate input points list structure and minimum length.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;draw_polyline requires a list of at least two (x, y) point tuples.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Convert the list of tuples into the list of dictionaries format</span>
+        <span class="c1"># required by the communication protocol ({ &quot;x&quot;: ..., &quot;y&quot;: ... }).</span>
+        <span class="c1"># Also perform basic validation that points contain numbers.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">points_payload</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">])}</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">points</span><span class="p">]</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid data format in &#39;points&#39; list for draw_polyline. Expect list of (x, y) tuples/lists with numbers. Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+        <span class="c1"># Prepare options dictionary with camelCase keys.</span>
+        <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;bufferId&quot;</span><span class="p">:</span> <span class="n">target_buffer_id</span><span class="p">,</span> <span class="s2">&quot;points&quot;</span><span class="p">:</span> <span class="n">points_payload</span><span class="p">}</span>
+        <span class="c1"># Add optional style parameters if provided.</span>
+        <span class="k">if</span> <span class="n">line_color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineColor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_color</span>
+        <span class="k">if</span> <span class="n">line_width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line_width</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">line_width</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineWidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_width</span>
+            <span class="k">else</span><span class="p">:</span>
+                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;line_width must be a positive integer.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Send the command. Raises on connection error.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_update</span><span class="p">(</span><span class="s2">&quot;drawPolyline&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Canvas.draw_polygon">
+<a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.draw_polygon">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_polygon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">PointList</span><span class="p">,</span>
+                     <span class="n">fill_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">line_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">line_width</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">buffer_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a closed polygon shape on the specified buffer.</span>
+
+<span class="sd">        Connects the vertices (points) in the order provided and automatically</span>
+<span class="sd">        draws an additional line segment connecting the last point back to the</span>
+<span class="sd">        first point to close the shape. The interior can optionally be filled.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            points (List[Tuple[int, int]]): A list containing at least three vertex</span>
+<span class="sd">                tuples, where each tuple `(x, y)` represents the integer coordinates</span>
+<span class="sd">                of a corner of the polygon.</span>
+<span class="sd">            fill_color (Optional[str]): The color to fill the interior of the polygon.</span>
+<span class="sd">                Accepts CSS color formats. If `None` (default), the polygon is not filled.</span>
+<span class="sd">            line_color (Optional[str]): The color of the polygon&#39;s outline. Uses UI</span>
+<span class="sd">                default if `None`. Use 0 for no outline.</span>
+<span class="sd">            line_width (Optional[int]): The thickness of the outline in pixels. Must</span>
+<span class="sd">                be non-negative. Uses UI default (typically 1) if `None`.</span>
+<span class="sd">            buffer_id (Optional[int]): The target buffer ID. Defaults to `None`</span>
+<span class="sd">                (targets the visible onscreen canvas, ID 0).</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If `points` contains fewer than three points, or if</span>
+<span class="sd">                        `line_width` is provided but is negative.</span>
+<span class="sd">            TypeError: If `points` is not a list or contains invalid data.</span>
+<span class="sd">            SidekickConnectionError (or subclass): If sending the command fails.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; canvas = sidekick.Canvas(200, 200)</span>
+<span class="sd">            &gt;&gt;&gt; # Draw a filled blue triangle</span>
+<span class="sd">            &gt;&gt;&gt; triangle = [(50, 150), (100, 50), (150, 150)]</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_polygon(triangle, fill_color=&#39;blue&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; # Draw an empty hexagon outline</span>
+<span class="sd">            &gt;&gt;&gt; hexagon = [(20, 10), (60, 10), (80, 50), (60, 90), (20, 90), (0, 50)]</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_polygon(hexagon, line_color=&#39;darkgreen&#39;, line_width=2)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Determine target buffer ID.</span>
+        <span class="n">target_buffer_id</span> <span class="o">=</span> <span class="n">buffer_id</span> <span class="k">if</span> <span class="n">buffer_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">ONSCREEN_BUFFER_ID</span>
+
+        <span class="c1"># Validate input points list structure and minimum length.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;draw_polygon requires a list of at least three (x, y) point tuples.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Convert points to the protocol format and validate.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">points_payload</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">])}</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">points</span><span class="p">]</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid data format in &#39;points&#39; list for draw_polygon. Expect list of (x, y) tuples/lists with numbers. Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Prepare options dictionary with camelCase keys.</span>
+        <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;bufferId&quot;</span><span class="p">:</span> <span class="n">target_buffer_id</span><span class="p">,</span> <span class="s2">&quot;points&quot;</span><span class="p">:</span> <span class="n">points_payload</span><span class="p">}</span>
+        <span class="c1"># Add optional style parameters if provided.</span>
+        <span class="k">if</span> <span class="n">fill_color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;fillColor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fill_color</span>
+        <span class="k">if</span> <span class="n">line_color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineColor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_color</span>
+        <span class="k">if</span> <span class="n">line_width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line_width</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">line_width</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineWidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_width</span>
+            <span class="k">else</span><span class="p">:</span>
+                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;line_width must be a non-negative integer.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Send the command. Raises on connection error.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_update</span><span class="p">(</span><span class="s2">&quot;drawPolygon&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Canvas.draw_ellipse">
+<a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.draw_ellipse">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_ellipse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">cy</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">radius_x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">radius_y</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                     <span class="n">fill_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">line_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">line_width</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">buffer_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws an ellipse (or oval) shape on the specified buffer.</span>
+
+<span class="sd">        The ellipse is defined by its center coordinates `(cx, cy)` and its</span>
+<span class="sd">        horizontal radius (`radius_x`) and vertical radius (`radius_y`). If</span>
+<span class="sd">        `radius_x` equals `radius_y`, this draws a circle.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            cx (int): The x-coordinate of the center of the ellipse.</span>
+<span class="sd">            cy (int): The y-coordinate of the center of the ellipse.</span>
+<span class="sd">            radius_x (int): The horizontal radius (half the total width) of the ellipse.</span>
+<span class="sd">                Must be positive.</span>
+<span class="sd">            radius_y (int): The vertical radius (half the total height) of the ellipse.</span>
+<span class="sd">                Must be positive.</span>
+<span class="sd">            fill_color (Optional[str]): The color to fill the inside of the ellipse.</span>
+<span class="sd">                Accepts CSS color formats. If `None` (default), the ellipse is not filled.</span>
+<span class="sd">            line_color (Optional[str]): The color of the ellipse&#39;s outline. Uses UI</span>
+<span class="sd">                default if `None`.</span>
+<span class="sd">            line_width (Optional[int]): The thickness of the outline in pixels. Must</span>
+<span class="sd">                be non-negative. Uses UI default (typically 1) if `None`. Use 0 for no outline.</span>
+<span class="sd">            buffer_id (Optional[int]): The target buffer ID. Defaults to `None`</span>
+<span class="sd">                (targets the visible onscreen canvas, ID 0).</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If `radius_x` or `radius_y` are not positive, or if</span>
+<span class="sd">                        `line_width` is provided but is negative.</span>
+<span class="sd">            SidekickConnectionError (or subclass): If sending the command fails.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; canvas = sidekick.Canvas(250, 150)</span>
+<span class="sd">            &gt;&gt;&gt; # Draw a wide, short, filled red ellipse</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_ellipse(125, 50, 80, 30, fill_color=&#39;red&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; # Draw a tall, thin, empty ellipse outline</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_ellipse(125, 100, 20, 40, line_color=&#39;black&#39;, line_width=1)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Determine target buffer ID.</span>
+        <span class="n">target_buffer_id</span> <span class="o">=</span> <span class="n">buffer_id</span> <span class="k">if</span> <span class="n">buffer_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">ONSCREEN_BUFFER_ID</span>
+
+        <span class="c1"># Validate radii.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">radius_x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">or</span> <span class="n">radius_x</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Ellipse radius_x must be a positive number.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">radius_y</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">or</span> <span class="n">radius_y</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Ellipse radius_y must be a positive number.&quot;</span><span class="p">)</span>
+        <span class="c1"># Ensure integer radii for payload.</span>
+        <span class="n">radius_x_int</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">radius_x</span><span class="p">)</span>
+        <span class="n">radius_y_int</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">radius_y</span><span class="p">)</span>
+
+        <span class="c1"># Prepare options dictionary with camelCase keys.</span>
+        <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;bufferId&quot;</span><span class="p">:</span> <span class="n">target_buffer_id</span><span class="p">,</span>
+            <span class="s2">&quot;cx&quot;</span><span class="p">:</span> <span class="n">cx</span><span class="p">,</span> <span class="s2">&quot;cy&quot;</span><span class="p">:</span> <span class="n">cy</span><span class="p">,</span>
+            <span class="s2">&quot;radiusX&quot;</span><span class="p">:</span> <span class="n">radius_x_int</span><span class="p">,</span> <span class="c1"># camelCase key for the protocol</span>
+            <span class="s2">&quot;radiusY&quot;</span><span class="p">:</span> <span class="n">radius_y_int</span>  <span class="c1"># camelCase key for the protocol</span>
+        <span class="p">}</span>
+        <span class="c1"># Add optional style parameters if provided.</span>
+        <span class="k">if</span> <span class="n">fill_color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;fillColor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fill_color</span>
+        <span class="k">if</span> <span class="n">line_color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineColor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_color</span>
+        <span class="k">if</span> <span class="n">line_width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line_width</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">line_width</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">options</span><span class="p">[</span><span class="s2">&quot;lineWidth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line_width</span>
+            <span class="k">else</span><span class="p">:</span>
+                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;line_width must be a non-negative integer.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Send the command. Raises on connection error.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_update</span><span class="p">(</span><span class="s2">&quot;drawEllipse&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Canvas.draw_text">
+<a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.draw_text">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                  <span class="n">text_color</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">text_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">buffer_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draws a string of text on the specified buffer.</span>
+
+<span class="sd">        The `(x, y)` coordinates typically define the position of the text. The exact</span>
+<span class="sd">        alignment (e.g., whether `(x, y)` is the top-left corner, bottom-left baseline,</span>
+<span class="sd">        or center) might depend slightly on the underlying UI implementation, but</span>
+<span class="sd">        bottom-left baseline is common for canvas APIs.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (int): The x-coordinate for the starting position of the text.</span>
+<span class="sd">            y (int): The y-coordinate for the starting position of the text.</span>
+<span class="sd">            text (str): The text string you want to display. Any Python object provided</span>
+<span class="sd">                        will be converted to its string representation using `str()`.</span>
+<span class="sd">            text_color (Optional[str]): The color of the text. Accepts CSS color</span>
+<span class="sd">                formats. Uses the UI&#39;s default text color (usually black or white</span>
+<span class="sd">                depending on theme) if `None`.</span>
+<span class="sd">            text_size (Optional[int]): The font size in pixels. Must be positive.</span>
+<span class="sd">                Uses the UI&#39;s default font size if `None`.</span>
+<span class="sd">            buffer_id (Optional[int]): The target buffer ID. Defaults to `None`</span>
+<span class="sd">                (targets the visible onscreen canvas, ID 0).</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If `text_size` is provided but is not positive.</span>
+<span class="sd">            SidekickConnectionError (or subclass): If sending the command fails.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; canvas = sidekick.Canvas(200, 100)</span>
+<span class="sd">            &gt;&gt;&gt; score = 150</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_text(10, 20, f&quot;Score: {score}&quot;) # Draw score with default style</span>
+<span class="sd">            &gt;&gt;&gt; canvas.draw_text(100, 60, &quot;GAME OVER&quot;, text_color=&#39;red&#39;, text_size=24) # Larger, red text</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Determine target buffer ID.</span>
+        <span class="n">target_buffer_id</span> <span class="o">=</span> <span class="n">buffer_id</span> <span class="k">if</span> <span class="n">buffer_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">ONSCREEN_BUFFER_ID</span>
+
+        <span class="c1"># Prepare options dictionary with camelCase keys.</span>
+        <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;bufferId&quot;</span><span class="p">:</span> <span class="n">target_buffer_id</span><span class="p">,</span>
+            <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span>
+            <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="c1"># Ensure the text is explicitly converted to a string.</span>
+        <span class="p">}</span>
+        <span class="c1"># Add optional style parameters if provided.</span>
+        <span class="k">if</span> <span class="n">text_color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;textColor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">text_color</span>
+        <span class="k">if</span> <span class="n">text_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text_size</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">text_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">options</span><span class="p">[</span><span class="s2">&quot;textSize&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">text_size</span>
+            <span class="k">else</span><span class="p">:</span>
+                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;text_size must be a positive integer.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Send the command. Raises on connection error.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_update</span><span class="p">(</span><span class="s2">&quot;drawText&quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+
+
+    <span class="c1"># --- Cleanup ---</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reset_specific_callbacks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal: Resets canvas-specific callbacks when the module is removed.</span>
+
+<span class="sd">        Called automatically by the base class&#39;s `remove()` method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Reset the click callback reference.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_click_callback</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="Canvas.remove">
+<a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.remove">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes the canvas from the Sidekick UI and cleans up associated resources.</span>
+
+<span class="sd">        This performs the necessary cleanup actions:</span>
+
+<span class="sd">        1.  **Destroys Offscreen Buffers:** Sends commands to the Sidekick UI to</span>
+<span class="sd">            destroy any hidden offscreen buffers that were created for this canvas</span>
+<span class="sd">            instance via `canvas.buffer()`, releasing their resources in the UI.</span>
+<span class="sd">        2.  **Calls Base `remove()`:** Invokes the `BaseModule.remove()` method, which:</span>
+<span class="sd">            a. Unregisters the internal message handler for this canvas.</span>
+<span class="sd">            b. Resets registered callbacks (`on_click`, `on_error`) to `None`.</span>
+<span class="sd">            c. Sends the final &#39;remove&#39; command to the Sidekick UI to delete the</span>
+<span class="sd">               main canvas element itself.</span>
+
+<span class="sd">        After calling `remove()`, you should no longer interact with this `Canvas` object.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            SidekickConnectionError (or subclass): Can occur if sending the</span>
+<span class="sd">                &#39;destroyBuffer&#39; or the final &#39;remove&#39; command fails. Cleanup of local</span>
+<span class="sd">                Python resources (callbacks, handlers, buffer pool state) will still</span>
+<span class="sd">                be attempted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Requesting removal of canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39; and its associated offscreen buffers.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># --- Destroy Offscreen Buffers ---</span>
+        <span class="c1"># Acquire lock for safe access/modification of the buffer pool during removal.</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_lock</span><span class="p">:</span>
+            <span class="c1"># Get a list of buffer IDs currently tracked in the pool *before* clearing it.</span>
+            <span class="c1"># We only need to explicitly destroy offscreen buffers (ID &gt; 0).</span>
+            <span class="n">buffer_ids_to_destroy</span> <span class="o">=</span> <span class="p">[</span><span class="n">bid</span> <span class="k">for</span> <span class="n">bid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_pool</span> <span class="k">if</span> <span class="n">bid</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ONSCREEN_BUFFER_ID</span><span class="p">]</span>
+
+            <span class="c1"># Send a &#39;destroyBuffer&#39; command for each known offscreen buffer.</span>
+            <span class="c1"># Do this before removing the main canvas module.</span>
+            <span class="k">for</span> <span class="n">buffer_id</span> <span class="ow">in</span> <span class="n">buffer_ids_to_destroy</span><span class="p">:</span>
+                 <span class="k">try</span><span class="p">:</span>
+                     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Sending &#39;destroyBuffer&#39; command for buffer ID </span><span class="si">{</span><span class="n">buffer_id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                     <span class="c1"># Prepare payload with camelCase key.</span>
+                     <span class="bp">self</span><span class="o">.</span><span class="n">_send_canvas_update</span><span class="p">(</span>
+                         <span class="n">action</span><span class="o">=</span><span class="s2">&quot;destroyBuffer&quot;</span><span class="p">,</span>
+                         <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;bufferId&quot;</span><span class="p">:</span> <span class="n">buffer_id</span><span class="p">}</span>
+                     <span class="p">)</span>
+                 <span class="k">except</span> <span class="n">connection</span><span class="o">.</span><span class="n">SidekickConnectionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                     <span class="c1"># Log the error but continue trying to remove other buffers and the main canvas.</span>
+                     <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Failed to send destroy command for offscreen buffer </span><span class="si">{</span><span class="n">buffer_id</span><span class="si">}</span><span class="s2"> during removal: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e_destroy</span><span class="p">:</span>
+                     <span class="c1"># Catch other unexpected errors during buffer destruction.</span>
+                     <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canvas &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="si">}</span><span class="s2">&#39;: Unexpected error destroying buffer </span><span class="si">{</span><span class="n">buffer_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e_destroy</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+            <span class="c1"># Clear the local state of the buffer pool after attempting destruction.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_pool</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_next_buffer_id</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># Reset the counter</span>
+
+        <span class="c1"># --- Call Base Class Removal ---</span>
+        <span class="c1"># This handles unregistering message handlers, resetting callbacks (including</span>
+        <span class="c1"># calling our _reset_specific_callbacks), and sending the final &#39;remove&#39;</span>
+        <span class="c1"># command for the main canvas module instance itself.</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Canvas.__del__">
+<a class="viewcode-back" href="../../sidekick.html#sidekick.canvas.Canvas.__del__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal: Fallback attempt to clean up resources upon garbage collection. (Internal).</span>
+
+<span class="sd">        Warning:</span>
+<span class="sd">            Relying on `__del__` for cleanup is not reliable in Python. **You should</span>
+<span class="sd">            always explicitly call the `canvas.remove()` method** when you are finished</span>
+<span class="sd">            with a canvas instance to ensure proper cleanup of both Python resources</span>
+<span class="sd">            and UI elements (including offscreen buffers) in Sidekick. This `__del__`</span>
+<span class="sd">            method primarily attempts to call the base class&#39;s `__del__` for handler</span>
+<span class="sd">            unregistration as a last resort. It does *not* attempt to destroy</span>
+<span class="sd">            offscreen buffers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Delegate to the base class&#39;s __del__ for handler unregistration attempt.</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__del__</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="c1"># Suppress errors during __del__, as recommended practice.</span>
+            <span class="k">pass</span></div>
 </div>
 
-
-    <span class="c1"># --- Removal ---</span>
-    <span class="c1"># Inherits the remove() method from BaseModule to remove the canvas element.</span>
-    <span class="c1"># No specific callbacks need resetting in _reset_specific_callbacks for Canvas.</span>
 </pre></div>
 
            </div>
